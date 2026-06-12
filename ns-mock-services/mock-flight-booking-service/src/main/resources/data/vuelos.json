@@ -1,0 +1,218 @@
+[
+    {
+        "id":  "V-C001-AB",
+        "ciudadOrigenId":  "LIMA",
+        "ciudadDestinoId":  "CUSC",
+        "aerolineaId":  "AL02"
+    },
+    {
+        "id":  "V-C001-BA",
+        "ciudadOrigenId":  "CUSC",
+        "ciudadDestinoId":  "LIMA",
+        "aerolineaId":  "AL02"
+    },
+    {
+        "id":  "V-C002-AB",
+        "ciudadOrigenId":  "MADR",
+        "ciudadDestinoId":  "RIOD",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C002-BA",
+        "ciudadOrigenId":  "RIOD",
+        "ciudadDestinoId":  "MADR",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C003-AB",
+        "ciudadOrigenId":  "PARI",
+        "ciudadDestinoId":  "TORO",
+        "aerolineaId":  "AL03"
+    },
+    {
+        "id":  "V-C003-BA",
+        "ciudadOrigenId":  "TORO",
+        "ciudadDestinoId":  "PARI",
+        "aerolineaId":  "AL03"
+    },
+    {
+        "id":  "V-C004-AB",
+        "ciudadOrigenId":  "PARI",
+        "ciudadDestinoId":  "NUYO",
+        "aerolineaId":  "AL03"
+    },
+    {
+        "id":  "V-C004-BA",
+        "ciudadOrigenId":  "NUYO",
+        "ciudadDestinoId":  "PARI",
+        "aerolineaId":  "AL03"
+    },
+    {
+        "id":  "V-C005-AB",
+        "ciudadOrigenId":  "CDPA",
+        "ciudadDestinoId":  "CDMX",
+        "aerolineaId":  "AL02"
+    },
+    {
+        "id":  "V-C005-BA",
+        "ciudadOrigenId":  "CDMX",
+        "ciudadDestinoId":  "CDPA",
+        "aerolineaId":  "AL02"
+    },
+    {
+        "id":  "V-C006-AB",
+        "ciudadOrigenId":  "CDPA",
+        "ciudadDestinoId":  "MIAM",
+        "aerolineaId":  "AL02"
+    },
+    {
+        "id":  "V-C006-BA",
+        "ciudadOrigenId":  "MIAM",
+        "ciudadDestinoId":  "CDPA",
+        "aerolineaId":  "AL02"
+    },
+    {
+        "id":  "V-C007-AB",
+        "ciudadOrigenId":  "LIMA",
+        "ciudadDestinoId":  "MIAM",
+        "aerolineaId":  "AL02"
+    },
+    {
+        "id":  "V-C007-BA",
+        "ciudadOrigenId":  "MIAM",
+        "ciudadDestinoId":  "LIMA",
+        "aerolineaId":  "AL02"
+    },
+    {
+        "id":  "V-C008-AB",
+        "ciudadOrigenId":  "LIMA",
+        "ciudadDestinoId":  "CDPA",
+        "aerolineaId":  "AL02"
+    },
+    {
+        "id":  "V-C008-BA",
+        "ciudadOrigenId":  "CDPA",
+        "ciudadDestinoId":  "LIMA",
+        "aerolineaId":  "AL02"
+    },
+    {
+        "id":  "V-C009-AB",
+        "ciudadOrigenId":  "MOSC",
+        "ciudadDestinoId":  "FRAK",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C009-BA",
+        "ciudadOrigenId":  "FRAK",
+        "ciudadDestinoId":  "MOSC",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C010-AB",
+        "ciudadOrigenId":  "FRAK",
+        "ciudadDestinoId":  "PARI",
+        "aerolineaId":  "AL03"
+    },
+    {
+        "id":  "V-C010-BA",
+        "ciudadOrigenId":  "PARI",
+        "ciudadDestinoId":  "FRAK",
+        "aerolineaId":  "AL03"
+    },
+    {
+        "id":  "V-C011-AB",
+        "ciudadOrigenId":  "FRAK",
+        "ciudadDestinoId":  "MADR",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C011-BA",
+        "ciudadOrigenId":  "MADR",
+        "ciudadDestinoId":  "FRAK",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C012-AB",
+        "ciudadOrigenId":  "DUBA",
+        "ciudadDestinoId":  "FRAK",
+        "aerolineaId":  "AL04"
+    },
+    {
+        "id":  "V-C012-BA",
+        "ciudadOrigenId":  "FRAK",
+        "ciudadDestinoId":  "DUBA",
+        "aerolineaId":  "AL04"
+    },
+    {
+        "id":  "V-C013-AB",
+        "ciudadOrigenId":  "DUBA",
+        "ciudadDestinoId":  "MADR",
+        "aerolineaId":  "AL04"
+    },
+    {
+        "id":  "V-C013-BA",
+        "ciudadOrigenId":  "MADR",
+        "ciudadDestinoId":  "DUBA",
+        "aerolineaId":  "AL04"
+    },
+    {
+        "id":  "V-C014-AB",
+        "ciudadOrigenId":  "LOGR",
+        "ciudadDestinoId":  "MADR",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C014-BA",
+        "ciudadOrigenId":  "MADR",
+        "ciudadDestinoId":  "LOGR",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C015-AB",
+        "ciudadOrigenId":  "NAIR",
+        "ciudadDestinoId":  "DUBA",
+        "aerolineaId":  "AL04"
+    },
+    {
+        "id":  "V-C015-BA",
+        "ciudadOrigenId":  "DUBA",
+        "ciudadDestinoId":  "NAIR",
+        "aerolineaId":  "AL04"
+    },
+    {
+        "id":  "V-C016-AB",
+        "ciudadOrigenId":  "PARI",
+        "ciudadDestinoId":  "NUYO",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C016-BA",
+        "ciudadOrigenId":  "NUYO",
+        "ciudadDestinoId":  "PARI",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C017-AB",
+        "ciudadOrigenId":  "CDPA",
+        "ciudadDestinoId":  "MIAM",
+        "aerolineaId":  "AL03"
+    },
+    {
+        "id":  "V-C017-BA",
+        "ciudadOrigenId":  "MIAM",
+        "ciudadDestinoId":  "CDPA",
+        "aerolineaId":  "AL03"
+    },
+    {
+        "id":  "V-C018-AB",
+        "ciudadOrigenId":  "DUBA",
+        "ciudadDestinoId":  "FRAK",
+        "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C018-BA",
+        "ciudadOrigenId":  "FRAK",
+        "ciudadDestinoId":  "DUBA",
+        "aerolineaId":  "AL01"
+    }
+]

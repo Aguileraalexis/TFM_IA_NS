@@ -1,0 +1,557 @@
+[
+    {
+        "id":  "RM0001",
+        "hotelId":  "HT001",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0002",
+        "hotelId":  "HT001",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0003",
+        "hotelId":  "HT001",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0004",
+        "hotelId":  "HT002",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0005",
+        "hotelId":  "HT002",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0006",
+        "hotelId":  "HT002",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0007",
+        "hotelId":  "HT003",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0008",
+        "hotelId":  "HT003",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0009",
+        "hotelId":  "HT003",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0010",
+        "hotelId":  "HT004",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0011",
+        "hotelId":  "HT004",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0012",
+        "hotelId":  "HT004",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0013",
+        "hotelId":  "HT005",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0014",
+        "hotelId":  "HT005",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0015",
+        "hotelId":  "HT005",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0016",
+        "hotelId":  "HT006",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0017",
+        "hotelId":  "HT006",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0018",
+        "hotelId":  "HT006",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0019",
+        "hotelId":  "HT007",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0020",
+        "hotelId":  "HT007",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0021",
+        "hotelId":  "HT007",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0022",
+        "hotelId":  "HT008",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0023",
+        "hotelId":  "HT008",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0024",
+        "hotelId":  "HT008",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0025",
+        "hotelId":  "HT009",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0026",
+        "hotelId":  "HT009",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0027",
+        "hotelId":  "HT009",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0028",
+        "hotelId":  "HT010",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0029",
+        "hotelId":  "HT010",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0030",
+        "hotelId":  "HT010",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0031",
+        "hotelId":  "HT011",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0032",
+        "hotelId":  "HT011",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0033",
+        "hotelId":  "HT011",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0034",
+        "hotelId":  "HT012",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0035",
+        "hotelId":  "HT012",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0036",
+        "hotelId":  "HT012",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0037",
+        "hotelId":  "HT013",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0038",
+        "hotelId":  "HT013",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0039",
+        "hotelId":  "HT013",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0040",
+        "hotelId":  "HT014",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0041",
+        "hotelId":  "HT014",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0042",
+        "hotelId":  "HT014",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0043",
+        "hotelId":  "HT015",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0044",
+        "hotelId":  "HT015",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0045",
+        "hotelId":  "HT015",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0046",
+        "hotelId":  "HT016",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0047",
+        "hotelId":  "HT016",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0048",
+        "hotelId":  "HT016",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0049",
+        "hotelId":  "HT017",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0050",
+        "hotelId":  "HT017",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0051",
+        "hotelId":  "HT017",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0052",
+        "hotelId":  "HT018",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0053",
+        "hotelId":  "HT018",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0054",
+        "hotelId":  "HT018",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0055",
+        "hotelId":  "HT019",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0056",
+        "hotelId":  "HT019",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0057",
+        "hotelId":  "HT019",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0058",
+        "hotelId":  "HT020",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0059",
+        "hotelId":  "HT020",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0060",
+        "hotelId":  "HT020",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0061",
+        "hotelId":  "HT021",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0062",
+        "hotelId":  "HT021",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0063",
+        "hotelId":  "HT021",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0064",
+        "hotelId":  "HT022",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0065",
+        "hotelId":  "HT022",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0066",
+        "hotelId":  "HT022",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0067",
+        "hotelId":  "HT023",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0068",
+        "hotelId":  "HT023",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0069",
+        "hotelId":  "HT023",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0070",
+        "hotelId":  "HT024",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0071",
+        "hotelId":  "HT024",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0072",
+        "hotelId":  "HT024",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0073",
+        "hotelId":  "HT025",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0074",
+        "hotelId":  "HT025",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0075",
+        "hotelId":  "HT025",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0076",
+        "hotelId":  "HT026",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0077",
+        "hotelId":  "HT026",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0078",
+        "hotelId":  "HT026",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0079",
+        "hotelId":  "HT027",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0080",
+        "hotelId":  "HT027",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0081",
+        "hotelId":  "HT027",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0082",
+        "hotelId":  "HT028",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0083",
+        "hotelId":  "HT028",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0084",
+        "hotelId":  "HT028",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0085",
+        "hotelId":  "HT029",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0086",
+        "hotelId":  "HT029",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0087",
+        "hotelId":  "HT029",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0088",
+        "hotelId":  "HT030",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0089",
+        "hotelId":  "HT030",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0090",
+        "hotelId":  "HT030",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0091",
+        "hotelId":  "HT031",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0092",
+        "hotelId":  "HT031",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0093",
+        "hotelId":  "HT031",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0094",
+        "hotelId":  "HT032",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0095",
+        "hotelId":  "HT032",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0096",
+        "hotelId":  "HT032",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0097",
+        "hotelId":  "HT033",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0098",
+        "hotelId":  "HT033",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0099",
+        "hotelId":  "HT033",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0100",
+        "hotelId":  "HT034",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0101",
+        "hotelId":  "HT034",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0102",
+        "hotelId":  "HT034",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0103",
+        "hotelId":  "HT035",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0104",
+        "hotelId":  "HT035",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0105",
+        "hotelId":  "HT035",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0106",
+        "hotelId":  "HT036",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0107",
+        "hotelId":  "HT036",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0108",
+        "hotelId":  "HT036",
+        "descripcion":  "Habitacion 3"
+    },
+    {
+        "id":  "RM0109",
+        "hotelId":  "HT037",
+        "descripcion":  "Habitacion 1"
+    },
+    {
+        "id":  "RM0110",
+        "hotelId":  "HT037",
+        "descripcion":  "Habitacion 2"
+    },
+    {
+        "id":  "RM0111",
+        "hotelId":  "HT037",
+        "descripcion":  "Habitacion 3"
+    }
+]

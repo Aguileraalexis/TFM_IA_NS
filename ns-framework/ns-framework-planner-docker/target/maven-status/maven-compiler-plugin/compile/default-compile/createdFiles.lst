@@ -1,0 +1,3 @@
+com\tesis\nsframework\planner\docker\PddlProblemWriter.class
+com\tesis\nsframework\planner\docker\DockerPlanner.class
+com\tesis\nsframework\planner\docker\PlanTextParser.class

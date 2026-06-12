@@ -1,0 +1,36 @@
+{
+  "bindings": [
+    {
+      "action": "register-user",
+      "endpoint": "/users/register",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "userId": "${user}"
+      },
+      "successCondition": "status == 201",
+      "effectsMapping": {
+        "(registered user1)": "true"
+      }
+    },
+    {
+      "action": "book-appointment",
+      "endpoint": "/appointments",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "userId": "${user}",
+        "slot": "${slot}"
+      },
+      "successCondition": "status == 201",
+      "effectsMapping": {
+        "(appointment-booked user1 slot1)": "true",
+        "(slot-available slot1)": "false"
+      }
+    }
+  ]
+}

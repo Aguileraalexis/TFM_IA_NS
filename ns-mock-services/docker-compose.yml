@@ -1,0 +1,28 @@
+services:
+  mock-hotel-booking-service:
+    build:
+      context: .
+      dockerfile: mock-hotel-booking-service/Dockerfile
+    container_name: mock-hotel-booking-service
+    ports:
+      - "8082:8082"
+
+  mock-flight-booking-service:
+    build:
+      context: .
+      dockerfile: mock-flight-booking-service/Dockerfile
+    container_name: mock-flight-booking-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - mock-hotel-booking-service
+
+  mock-tourist-attractions-service:
+    build:
+      context: .
+      dockerfile: mock-tourist-attractions-service/Dockerfile
+    container_name: mock-tourist-attractions-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - mock-hotel-booking-service
