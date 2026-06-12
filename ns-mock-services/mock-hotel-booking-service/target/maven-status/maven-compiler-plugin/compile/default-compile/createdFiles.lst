@@ -3,6 +3,7 @@ com\tesis\mock\booking\HotelBookingServiceApplication.class
 com\tesis\mock\booking\HotelBookingController$2.class
 com\tesis\mock\booking\dto\PaisDto.class
 com\tesis\mock\booking\dto\UsuarioDto.class
+com\tesis\mock\booking\OpenApiConfig.class
 com\tesis\mock\booking\dto\CiudadDto.class
 com\tesis\mock\booking\dto\HabitacionDto.class
 com\tesis\mock\booking\HotelBookingController$4.class

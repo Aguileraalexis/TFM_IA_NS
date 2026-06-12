@@ -8,6 +8,10 @@ import com.tesis.mock.flight.dto.EstadoReservaVuelo;
 import com.tesis.mock.flight.dto.ReservaVueloDto;
 import com.tesis.mock.flight.dto.UsuarioDto;
 import com.tesis.mock.flight.dto.VueloDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
+@Tag(name = "Flight Booking", description = "Consulta de ciudades, aerolíneas, vuelos y gestión de reservas de vuelos")
 public class FlightBookingController {
 
     private static final int MAX_RESERVAS_POR_VUELO_Y_FECHA = 5;
@@ -53,26 +58,30 @@ public class FlightBookingController {
         cargarReservas();
     }
 
+    @Operation(summary = "Listar ciudades", description = "Devuelve todas las ciudades disponibles ordenadas por ID")
     @GetMapping("/ciudades")
     public List<CiudadDto> obtenerCiudades() {
         return ordenar(ciudades.values().stream().toList(), CiudadDto::id);
     }
 
+    @Operation(summary = "Listar aerolíneas", description = "Devuelve todas las aerolíneas disponibles")
     @GetMapping("/aerolineas")
     public List<AerolineaDto> obtenerAerolineas() {
         return ordenar(aerolineas.values().stream().toList(), AerolineaDto::id);
     }
 
+    @Operation(summary = "Listar usuarios", description = "Devuelve todos los usuarios registrados")
     @GetMapping("/usuarios")
     public List<UsuarioDto> obtenerUsuarios() {
         return ordenar(usuarios.values().stream().toList(), UsuarioDto::id);
     }
 
+    @Operation(summary = "Listar vuelos", description = "Devuelve vuelos filtrados opcionalmente por ciudad origen, destino y aerolínea")
     @GetMapping("/vuelos")
     public List<VueloDto> obtenerVuelos(
-            @RequestParam(required = false) String ciudadOrigenId,
-            @RequestParam(required = false) String ciudadDestinoId,
-            @RequestParam(required = false) String aerolineaId
+            @Parameter(description = "ID ciudad de origen") @RequestParam(required = false) String ciudadOrigenId,
+            @Parameter(description = "ID ciudad de destino") @RequestParam(required = false) String ciudadDestinoId,
+            @Parameter(description = "ID de la aerolínea") @RequestParam(required = false) String aerolineaId
     ) {
         return vuelos.values().stream()
                 .filter(vuelo -> ciudadOrigenId == null || vuelo.ciudadOrigenId().equals(ciudadOrigenId))
@@ -82,6 +91,13 @@ public class FlightBookingController {
                 .toList();
     }
 
+    @Operation(summary = "Crear reserva de vuelo", description = "Crea una reserva si existe ruta y hay plazas disponibles (máx. 5 por vuelo y fecha)",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Reserva creada"),
+                    @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
+                    @ApiResponse(responseCode = "404", description = "Usuario, ciudad o aerolínea no encontrada"),
+                    @ApiResponse(responseCode = "409", description = "Sin ruta disponible o vuelo completo")
+            })
     @PostMapping("/reservas-vuelos")
     public ReservaVueloDto crearReserva(@RequestBody ReservaVueloRequestDto request) {
         if (request == null || esVacio(request.usuarioId()) || esVacio(request.aerolineaId()) || esVacio(request.ciudadOrigenId())
@@ -139,6 +155,10 @@ public class FlightBookingController {
         lista.forEach(usuario -> guardarUnico(usuarios, usuario.id(), usuario, "usuario"));
     }
 
+    @Operation(summary = "Obtener reserva de vuelo por ID", responses = {
+            @ApiResponse(responseCode = "200", description = "Reserva encontrada"),
+            @ApiResponse(responseCode = "404", description = "Reserva no encontrada")
+    })
     @GetMapping("/reservas-vuelos/{reservaId}")
     public ReservaVueloDto obtenerReserva(@PathVariable String reservaId) {
         ReservaVueloDto reserva = reservas.get(reservaId);
@@ -148,6 +168,7 @@ public class FlightBookingController {
         return reserva;
     }
 
+    @Operation(summary = "Listar reservas de vuelos", description = "Devuelve todas las reservas de vuelo existentes")
     @GetMapping("/reservas-vuelos")
     public List<ReservaVueloDto> obtenerReservas() {
         return ordenar(reservas.values().stream().toList(), ReservaVueloDto::id);

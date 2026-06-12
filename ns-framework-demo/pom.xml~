@@ -18,6 +18,7 @@
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <!-- Replace with the version you publish to GitHub Packages -->
         <ns.framework.version>0.1.0-SNAPSHOT</ns.framework.version>
+        <springdoc.version>2.6.0</springdoc.version>
         <!-- Replace these with your GitHub owner and repository that hosts the Maven packages -->
         <github.owner>YOUR_GITHUB_OWNER</github.owner>
         <github.repo>YOUR_FRAMEWORK_REPOSITORY</github.repo>

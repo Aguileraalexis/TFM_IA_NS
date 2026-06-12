@@ -8,6 +8,10 @@ import com.tesis.mock.booking.dto.HabitacionDto;
 import com.tesis.mock.booking.dto.HotelDto;
 import com.tesis.mock.booking.dto.ReservaDto;
 import com.tesis.mock.booking.dto.UsuarioDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
+@Tag(name = "Hotel Booking", description = "Consulta de ciudades, hoteles y gestión de reservas de habitaciones")
 public class HotelBookingController {
 
     private final ObjectMapper objectMapper;
@@ -51,13 +56,15 @@ public class HotelBookingController {
         cargarReservas();
     }
 
+    @Operation(summary = "Listar ciudades", description = "Devuelve todas las ciudades disponibles ordenadas por ID")
     @GetMapping("/ciudades")
     public List<CiudadDto> obtenerCiudades() {
         return ordenar(ciudades.values().stream().toList(), CiudadDto::id);
     }
 
+    @Operation(summary = "Listar hoteles", description = "Devuelve todos los hoteles, opcionalmente filtrados por ciudad")
     @GetMapping("/hoteles")
-    public List<HotelDto> obtenerHoteles(@RequestParam(required = false) String ciudadId) {
+    public List<HotelDto> obtenerHoteles(@Parameter(description = "ID de la ciudad para filtrar") @RequestParam(required = false) String ciudadId) {
         if (ciudadId != null && !ciudades.containsKey(ciudadId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciudad no encontrada");
         }
@@ -67,11 +74,16 @@ public class HotelBookingController {
                 .toList();
     }
 
+    @Operation(summary = "Listar reservas", description = "Devuelve todas las reservas de hotel existentes")
     @GetMapping("/reservas")
     public List<ReservaDto> obtenerReservas() {
         return ordenar(reservas.values().stream().toList(), ReservaDto::id);
     }
 
+    @Operation(summary = "Obtener reserva por ID", responses = {
+            @ApiResponse(responseCode = "200", description = "Reserva encontrada"),
+            @ApiResponse(responseCode = "404", description = "Reserva no encontrada")
+    })
     @GetMapping("/reservas/{reservaId}")
     public ReservaDto obtenerReserva(@PathVariable String reservaId) {
         ReservaDto reserva = reservas.get(reservaId);
@@ -81,6 +93,13 @@ public class HotelBookingController {
         return reserva;
     }
 
+    @Operation(summary = "Crear reserva de hotel", description = "Busca la primera habitación libre del hotel en la fecha indicada y crea la reserva",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Reserva creada"),
+                    @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
+                    @ApiResponse(responseCode = "404", description = "Usuario u hotel no encontrado"),
+                    @ApiResponse(responseCode = "409", description = "Sin habitaciones disponibles para esa fecha")
+            })
     @PostMapping("/reservas")
     public ReservaDto crearReserva(@RequestBody ReservaRequestDto request) {
         if (request == null || esVacio(request.usuarioId()) || esVacio(request.hotelId()) || request.fecha() == null) {

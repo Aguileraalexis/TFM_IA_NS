@@ -7,6 +7,12 @@ management:
       exposure:
         include: health,info
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
 spring:
   application:
     name: ns-framework-demo-app

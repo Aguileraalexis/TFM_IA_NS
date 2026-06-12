@@ -1,3 +1,4 @@
+com\tesis\mock\flight\OpenApiConfig.class
 com\tesis\mock\flight\dto\VueloDto.class
 com\tesis\mock\flight\dto\EstadoReservaVuelo.class
 com\tesis\mock\flight\dto\UsuarioDto.class

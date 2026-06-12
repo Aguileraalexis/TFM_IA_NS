@@ -4,6 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tesis.mock.tourism.dto.AtractivoTuristicoDto;
 import com.tesis.mock.tourism.dto.CiudadDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
+@Tag(name = "Tourist Attractions", description = "Consulta de ciudades y atractivos turísticos")
 public class TouristAttractionsController {
 
     private final ObjectMapper objectMapper;
@@ -36,18 +41,26 @@ public class TouristAttractionsController {
         cargarAtractivos();
     }
 
+    @Operation(summary = "Listar ciudades", description = "Devuelve todas las ciudades disponibles ordenadas por ID")
     @GetMapping("/ciudades")
     public List<CiudadDto> obtenerCiudades() {
         return ordenar(ciudades.values().stream().toList(), CiudadDto::id);
     }
 
+    @Operation(summary = "Listar todos los atractivos", description = "Devuelve todos los atractivos turísticos ordenados por ID")
     @GetMapping("/atractivos")
     public List<AtractivoTuristicoDto> obtenerAtractivos() {
         return ordenar(atractivos.values().stream().toList(), AtractivoTuristicoDto::id);
     }
 
+    @Operation(summary = "Listar atractivos por ciudad", description = "Devuelve los atractivos turísticos de una ciudad específica",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Lista de atractivos"),
+                    @ApiResponse(responseCode = "404", description = "Ciudad no encontrada")
+            })
     @GetMapping("/ciudades/{ciudadId}/atractivos")
-    public List<AtractivoTuristicoDto> obtenerAtractivosPorCiudad(@PathVariable String ciudadId) {
+    public List<AtractivoTuristicoDto> obtenerAtractivosPorCiudad(
+            @Parameter(description = "ID de la ciudad") @PathVariable String ciudadId) {
         if (!ciudades.containsKey(ciudadId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciudad no encontrada");
         }
