@@ -8,6 +8,9 @@ set -eu
 set -o pipefail 2>/dev/null || true
 
 DEMO_SERVICE="ns-framework-demo"
+SERVICE_FILE_ETC="/etc/systemd/system/${DEMO_SERVICE}.service"
+SERVICE_FILE_USR_LIB="/usr/lib/systemd/system/${DEMO_SERVICE}.service"
+SERVICE_FILE_LIB="/lib/systemd/system/${DEMO_SERVICE}.service"
 
 info()    { echo "[INFO]  $*"; }
 success() { echo "[OK]    $*"; }
@@ -22,9 +25,12 @@ SCRIPT_NAME="$(basename "$0")"
 [ "${CURRENT_DIR}" = "${SCRIPT_DIR}" ] || error "Debes situarte en ns-framework-demo y ejecutarlo con: sh deploy-demo.sh"
 [ -f "${SCRIPT_DIR}/pom.xml" ] || error "No se encontro pom.xml en ${SCRIPT_DIR}."
 
-if ! systemctl list-unit-files | grep -q "^${DEMO_SERVICE}\.service"; then
+if [ ! -f "${SERVICE_FILE_ETC}" ] && [ ! -f "${SERVICE_FILE_USR_LIB}" ] && [ ! -f "${SERVICE_FILE_LIB}" ]; then
   error "No existe ${DEMO_SERVICE}.service. Ejecuta antes: sudo sh register-demo-systemd-service.sh"
 fi
+
+# Refrescar unidades para asegurar que systemd vea el .service recien registrado.
+systemctl daemon-reload
 
 # 1) Detener servicio
 info "Paso 1/3 - Detener servicio demo"
