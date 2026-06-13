@@ -56,6 +56,19 @@ for svc in "${HOTEL_SERVICE}" "${FLIGHT_SERVICE}" "${TOURISM_SERVICE}"; do
 done
 
 echo ""
+echo "Verificando arranque de servicios..."
+sleep 2
+for svc in "${HOTEL_SERVICE}" "${FLIGHT_SERVICE}" "${TOURISM_SERVICE}"; do
+  if systemctl is-active --quiet "${svc}"; then
+    success "Servicio activo: ${svc}"
+  else
+    echo ""
+    systemctl status "${svc}" --no-pager -l || true
+    error "El servicio no quedo activo: ${svc}"
+  fi
+done
+
+echo ""
 echo "Estado de servicios:"
 systemctl status "${HOTEL_SERVICE}" --no-pager -l || true
 systemctl status "${FLIGHT_SERVICE}" --no-pager -l || true
