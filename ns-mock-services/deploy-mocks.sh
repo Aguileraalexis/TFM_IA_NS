@@ -10,7 +10,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # CONFIGURACION
 # ---------------------------------------------------------------------------
-GITHUB_REPO_URL="https://github.com/YOUR_GITHUB_OWNER/YOUR_REPO.git"
+GITHUB_REPO_URL="https://github.com/Aguileraalexis/TFM_IA_NS.git"
 TARGET_DIR="ns-mock-services"
 BRANCH="main"
 
