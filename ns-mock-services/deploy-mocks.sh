@@ -12,7 +12,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 GITHUB_REPO_URL="https://github.com/Aguileraalexis/TFM_IA_NS.git"
 TARGET_DIR="ns-mock-services"
-BRANCH="main"
+BRANCH="master"
 
 # Unidades systemd
 HOTEL_SERVICE="mock-hotel-booking-service"
