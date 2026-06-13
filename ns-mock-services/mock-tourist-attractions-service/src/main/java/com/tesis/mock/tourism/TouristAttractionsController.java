@@ -60,7 +60,7 @@ public class TouristAttractionsController {
             })
     @GetMapping("/ciudades/{ciudadId}/atractivos")
     public List<AtractivoTuristicoDto> obtenerAtractivosPorCiudad(
-            @Parameter(description = "ID de la ciudad") @PathVariable String ciudadId) {
+            @Parameter(description = "ID de la ciudad") @PathVariable("ciudadId") String ciudadId) {
         if (!ciudades.containsKey(ciudadId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciudad no encontrada");
         }

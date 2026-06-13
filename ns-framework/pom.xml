@@ -19,6 +19,7 @@
         <module>ns-framework-executor-rest</module>
         <module>ns-framework-bom</module>
         <module>ns-framework-starter</module>
+        <module>../ns-framework-demo</module>
     </modules>
 
     <properties>

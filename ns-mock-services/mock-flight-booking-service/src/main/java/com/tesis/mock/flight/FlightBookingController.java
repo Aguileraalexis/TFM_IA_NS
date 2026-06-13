@@ -79,9 +79,9 @@ public class FlightBookingController {
     @Operation(summary = "Listar vuelos", description = "Devuelve vuelos filtrados opcionalmente por ciudad origen, destino y aerolínea")
     @GetMapping("/vuelos")
     public List<VueloDto> obtenerVuelos(
-            @Parameter(description = "ID ciudad de origen") @RequestParam(required = false) String ciudadOrigenId,
-            @Parameter(description = "ID ciudad de destino") @RequestParam(required = false) String ciudadDestinoId,
-            @Parameter(description = "ID de la aerolínea") @RequestParam(required = false) String aerolineaId
+            @Parameter(description = "ID ciudad de origen") @RequestParam(name = "ciudadOrigenId", required = false) String ciudadOrigenId,
+            @Parameter(description = "ID ciudad de destino") @RequestParam(name = "ciudadDestinoId", required = false) String ciudadDestinoId,
+            @Parameter(description = "ID de la aerolínea") @RequestParam(name = "aerolineaId", required = false) String aerolineaId
     ) {
         return vuelos.values().stream()
                 .filter(vuelo -> ciudadOrigenId == null || vuelo.ciudadOrigenId().equals(ciudadOrigenId))
@@ -160,7 +160,7 @@ public class FlightBookingController {
             @ApiResponse(responseCode = "404", description = "Reserva no encontrada")
     })
     @GetMapping("/reservas-vuelos/{reservaId}")
-    public ReservaVueloDto obtenerReserva(@PathVariable String reservaId) {
+    public ReservaVueloDto obtenerReserva(@PathVariable("reservaId") String reservaId) {
         ReservaVueloDto reserva = reservas.get(reservaId);
         if (reserva == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada");

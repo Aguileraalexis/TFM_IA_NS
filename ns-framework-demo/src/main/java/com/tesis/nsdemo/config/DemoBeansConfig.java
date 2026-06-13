@@ -1,6 +1,6 @@
 package com.tesis.nsdemo.config;
 
-import com.tesis.nsdemo.impl.TravelExecutionOrchestrator;
+import com.tesis.nsdemo.impl.*;
 import com.tesis.nsdemo.travel.TravelDomainPddlGenerator;
 import com.tesis.nsframework.core.model.DomainMetadata;
 import com.tesis.nsframework.core.model.PlannerOptions;
@@ -12,6 +12,7 @@ import com.tesis.nsframework.core.service.InMemoryStateStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,8 +46,15 @@ public class DemoBeansConfig {
     }
 
     @Bean
-    public PlannerOptions plannerOptions() {
+    public PlannerOptions plannerOptions(TravelDemoProperties properties) {
         return PlannerOptions.defaults();
+    }
+
+    @Bean
+    public Planner planner(TravelDemoProperties properties) {
+        // DockerPlanner will be returned via the ExecutionOrchestrator bean wiring
+        // Components (TravelIntentInterpreter, TravelFeignActionExecutor) handle Feign autowiring
+        return new TravelDemoPlanner();
     }
 
     @Bean

@@ -8,7 +8,14 @@
         <outputRelativeToContentRoot value="true" />
         <module name="mock-hotel-booking-service" />
         <module name="mock-tourist-attractions-service" />
+        <module name="ns-framework-planner-docker" />
+        <module name="ns-framework-starter" />
+        <module name="ns-framework-config" />
+        <module name="ns-framework-executor-rest" />
         <module name="mock-flight-booking-service" />
+        <module name="ns-framework-core" />
+        <module name="ns-framework-demo-app" />
+        <module name="ns-framework-llm-http" />
       </profile>
     </annotationProcessing>
   </component>

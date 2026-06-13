@@ -2,10 +2,12 @@ com\tesis\nsdemo\client\FlightServiceClient.class
 com\tesis\nsdemo\travel\TravelDomainPddlGenerator.class
 com\tesis\nsdemo\client\dto\AttractionDto.class
 com\tesis\nsdemo\impl\DemoActionExecutor.class
+com\tesis\nsdemo\config\OpenApiConfig.class
 com\tesis\nsdemo\NsFrameworkDemoApplication.class
 com\tesis\nsdemo\impl\TravelIntentInterpreter.class
 com\tesis\nsdemo\impl\TravelPlanningProblemBuilder.class
 com\tesis\nsdemo\client\dto\HotelDto.class
+com\tesis\nsdemo\config\TravelDemoProperties$PlannerProperties.class
 com\tesis\nsdemo\travel\TravelCatalogService.class
 com\tesis\nsdemo\client\dto\FlightDto.class
 com\tesis\nsdemo\client\dto\FlightReservationRequest.class

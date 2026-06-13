@@ -64,7 +64,7 @@ public class HotelBookingController {
 
     @Operation(summary = "Listar hoteles", description = "Devuelve todos los hoteles, opcionalmente filtrados por ciudad")
     @GetMapping("/hoteles")
-    public List<HotelDto> obtenerHoteles(@Parameter(description = "ID de la ciudad para filtrar") @RequestParam(required = false) String ciudadId) {
+    public List<HotelDto> obtenerHoteles(@Parameter(description = "ID de la ciudad para filtrar") @RequestParam(name = "ciudadId", required = false) String ciudadId) {
         if (ciudadId != null && !ciudades.containsKey(ciudadId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciudad no encontrada");
         }
@@ -85,7 +85,7 @@ public class HotelBookingController {
             @ApiResponse(responseCode = "404", description = "Reserva no encontrada")
     })
     @GetMapping("/reservas/{reservaId}")
-    public ReservaDto obtenerReserva(@PathVariable String reservaId) {
+    public ReservaDto obtenerReserva(@PathVariable("reservaId") String reservaId) {
         ReservaDto reserva = reservas.get(reservaId);
         if (reserva == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada");
