@@ -1,0 +1,32 @@
+# ---- Maven build output ----
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# ---- IDE files ----
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+*.swp
+*~
+
+# ---- OS files ----
+.DS_Store
+Thumbs.db
+
+# ---- Spring Boot ----
+*.jar
+*.war
+*.ear
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- Backup files created by editors ----
+*.orig
+*.bak
+

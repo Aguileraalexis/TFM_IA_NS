@@ -1,4 +1,0 @@
-com\tesis\nsframework\config\binding\ActionBinding.class
-com\tesis\nsframework\config\loader\ActionBindingRegistry.class
-com\tesis\nsframework\config\binding\ActionBindingsFile.class
-com\tesis\nsframework\config\loader\JsonActionBindingLoader.class
