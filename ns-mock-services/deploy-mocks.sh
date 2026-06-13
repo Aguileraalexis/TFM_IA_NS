@@ -5,7 +5,8 @@
 # Flujo operativo: cd + git + mvn + systemctl.
 # =============================================================================
 
-set -euo pipefail
+set -eu
+set -o pipefail 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # CONFIGURACION
@@ -23,20 +24,35 @@ TOURISM_SERVICE="mock-tourist-attractions-service"
 info()    { echo "[INFO]  $*"; }
 success() { echo "[OK]    $*"; }
 warn()    { echo "[WARN]  $*"; }
+error()   { echo "[ERROR] $*"; exit 1; }
+
+# Resolver directorio base real del script para evitar clones/carpetas anidadas.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [ -f "${SCRIPT_DIR}/pom.xml" ]; then
+  PROJECT_DIR="${SCRIPT_DIR}"
+else
+  PROJECT_DIR="${SCRIPT_DIR}/${TARGET_DIR}"
+fi
 
 # 1) Descargar o actualizar repositorio
 info "Paso 1/4 - Descargar o actualizar codigo"
-if [ -d "${TARGET_DIR}/.git" ]; then
-  cd "${TARGET_DIR}"
+if [ -d "${PROJECT_DIR}/.git" ]; then
+  cd "${PROJECT_DIR}"
   git fetch origin
   git checkout "${BRANCH}"
   git reset --hard "origin/${BRANCH}"
   success "Repositorio actualizado en rama ${BRANCH}"
 else
+  # Clona en SCRIPT_DIR/TARGET_DIR cuando no existe repo local.
+  cd "${SCRIPT_DIR}"
   git clone --branch "${BRANCH}" --depth 1 "${GITHUB_REPO_URL}" "${TARGET_DIR}"
-  cd "${TARGET_DIR}"
+  PROJECT_DIR="${SCRIPT_DIR}/${TARGET_DIR}"
+  cd "${PROJECT_DIR}"
   success "Repositorio clonado"
 fi
+
+[ -f "${PROJECT_DIR}/pom.xml" ] || error "No se encontro pom.xml en ${PROJECT_DIR}"
 
 # 2) Detener servicios
 info "Paso 2/4 - Detener servicios"
@@ -51,6 +67,7 @@ done
 
 # 3) Compilar
 info "Paso 3/4 - Compilar modulos"
+cd "${PROJECT_DIR}"
 mvn -q clean package -DskipTests
 success "Compilacion completada"
 
