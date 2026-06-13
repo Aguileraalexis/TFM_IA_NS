@@ -17,12 +17,13 @@ success() { echo "[OK]    $*"; }
 warn()    { echo "[WARN]  $*"; }
 error()   { echo "[ERROR] $*"; exit 1; }
 
-# Forzar ejecucion local desde ns-mock-services con ./deploy-mocks.sh
+# Forzar ejecucion local desde ns-mock-services con sh deploy-mocks.sh
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CURRENT_DIR="$(pwd)"
+SCRIPT_NAME="$(basename "$0")"
 
-[ "$0" = "./deploy-mocks.sh" ] || error "Debes ejecutarlo como: ./deploy-mocks.sh"
-[ "${CURRENT_DIR}" = "${SCRIPT_DIR}" ] || error "Debes situarte en ns-mock-services y ejecutarlo con ./deploy-mocks.sh"
+[ "$SCRIPT_NAME" = "deploy-mocks.sh" ] || error "Debes ejecutarlo como: sh deploy-mocks.sh"
+[ "${CURRENT_DIR}" = "${SCRIPT_DIR}" ] || error "Debes situarte en ns-mock-services y ejecutarlo con: sh deploy-mocks.sh"
 
 if [ -f "${SCRIPT_DIR}/pom.xml" ]; then
   PROJECT_DIR="${SCRIPT_DIR}"
