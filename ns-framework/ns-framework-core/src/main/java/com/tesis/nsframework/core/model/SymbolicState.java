@@ -20,6 +20,11 @@ public final class SymbolicState {
         return Set.copyOf(facts);
     }
 
+    // Jackson reconoce getters estilo JavaBean durante la serializacion de respuestas HTTP.
+    public Set<String> getFacts() {
+        return facts();
+    }
+
     public void addFact(String fact) {
         if (fact != null && !fact.isBlank()) {
             facts.add(fact);

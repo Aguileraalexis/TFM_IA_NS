@@ -11,43 +11,67 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
+import java.time.LocalDate;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Generic HTTP-based interpreter. It assumes the upstream LLM endpoint accepts a JSON payload with a prompt
- * and returns a JSON body containing either a direct JSON object or a text field with JSON content.
+ * Interprete generico basado en HTTP.
+ * Asume que el endpoint LLM aguas arriba recibe un payload JSON con el prompt
+ * y devuelve un cuerpo JSON con un objeto directo o un campo de texto con contenido JSON.
  */
 public class HttpLlmIntentInterpreter implements IntentInterpreter {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpLlmIntentInterpreter.class);
+    private static final String DEFAULT_SYSTEM_PROMPT =
+            "Return only valid JSON with fields: intent, entities, constraints, confidence. Do not add markdown fences.";
+    private static final String CITY_CATALOG_TOKEN = "{{CITY_CATALOG}}";
+    private static final String ATTRACTION_CATALOG_TOKEN = "{{ATTRACTION_CATALOG}}";
+    private static final String CATALOG_BASE_URL_OPTION = "catalog-base-url";
+    private static final String CATALOG_CITIES_PATH_OPTION = "catalog-cities-path";
+    private static final String CATALOG_ATTRACTIONS_PATH_OPTION = "catalog-attractions-path";
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final URI endpoint;
     private final String apiKey;
     private final Duration timeout;
+    private final Map<String, Object> requestOptions;
 
     public HttpLlmIntentInterpreter(ObjectMapper objectMapper, URI endpoint, String apiKey, Duration timeout) {
+        this(objectMapper, endpoint, apiKey, timeout, Map.of());
+    }
+
+    public HttpLlmIntentInterpreter(ObjectMapper objectMapper,
+                                    URI endpoint,
+                                    String apiKey,
+                                    Duration timeout,
+                                    Map<String, Object> requestOptions) {
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = objectMapper;
         this.endpoint = endpoint;
         this.apiKey = apiKey;
         this.timeout = timeout == null ? Duration.ofSeconds(30) : timeout;
+        this.requestOptions = requestOptions == null ? Map.of() : Map.copyOf(requestOptions);
     }
 
     @Override
     public InterpretationResult interpret(String userInput, DomainMetadata domainMetadata) {
         try {
             String prompt = buildPrompt(userInput, domainMetadata);
-            Map<String, Object> payload = Map.of(
-                    "prompt", prompt,
-                    "format", "json"
-            );
+
+            Map<String, Object> payload = new LinkedHashMap<>(requestOptions);
+            payload.put("system", renderSystemPrompt(payload));
+            payload.put("prompt", prompt);
+            payload.putIfAbsent("format", "json");
+            LOGGER.debug("PAYLOAD: {}", payload);
 
             HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(endpoint)
@@ -64,20 +88,161 @@ public class HttpLlmIntentInterpreter implements IntentInterpreter {
                 throw new FrameworkException("LLM call failed with status " + response.statusCode());
             }
 
+            LOGGER.debug("RESPUESTA_HTTP_LLM: {}", response.body());
+
             return parseInterpretation(response.body());
-        } catch (IOException | InterruptedException ex) {
+        } catch (HttpTimeoutException ex) {
+            LOGGER.error("Tiempo de espera agotado en la solicitud al LLM. endpoint={}, timeoutSeconds={}", endpoint, timeout.toSeconds(), ex);
+            throw new FrameworkException("La solicitud al LLM excedio el tiempo de espera de " + timeout + " al invocar " + endpoint, ex);
+        } catch (ConnectException ex) {
+            LOGGER.error("No se pudo conectar al endpoint LLM. endpoint={}", endpoint, ex);
+            throw new FrameworkException("No se pudo conectar a " + endpoint, ex);
+        } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
-            LOGGER.error("Failed to interpret intent", ex);
-            throw new FrameworkException("Failed to interpret user input", ex);
+            LOGGER.error("Error al interpretar la intencion", ex);
+            throw new FrameworkException("No se pudo interpretar la entrada del usuario", ex);
+        } catch (IOException ex) {
+            LOGGER.error("Error al interpretar la intencion", ex);
+            throw new FrameworkException("No se pudo interpretar la entrada del usuario", ex);
         }
     }
 
     private String buildPrompt(String userInput, DomainMetadata domainMetadata) {
         return "You are an intent extraction component for a neuro-symbolic framework. " +
+                "Today's date (ISO-8601) is " + LocalDate.now() + ". " +
+                "If the user provides day and month but no year, infer the nearest future calendar date from today. " +
                 "Return only valid JSON with fields: intent, entities, constraints, confidence. " +
                 "Supported intents: " + String.join(", ", domainMetadata.supportedIntents()) + ". " +
                 "Map the user request into the closest supported intent. " +
                 "User input: \"" + userInput + "\"";
+    }
+
+    private String renderSystemPrompt(Map<String, Object> payload) throws IOException, InterruptedException {
+        String template = selectedSystemPrompt(payload);
+        String catalogBaseUrl = stringOption(payload, CATALOG_BASE_URL_OPTION, "DEMO_TRAVEL_CATALOG_BASE_URL", "http://localhost:8085");
+        String citiesPath = stringOption(payload, CATALOG_CITIES_PATH_OPTION, "DEMO_TRAVEL_CATALOG_CITIES_PATH", "/ciudades");
+        String attractionsPath = stringOption(payload, CATALOG_ATTRACTIONS_PATH_OPTION, "DEMO_TRAVEL_CATALOG_ATTRACTIONS_PATH", "/atractivos");
+
+        JsonNode cityRoot = fetchCatalogArray(catalogBaseUrl, citiesPath);
+        JsonNode attractionRoot = fetchCatalogArray(catalogBaseUrl, attractionsPath);
+
+        String cityCatalog = formatCatalogListing(cityRoot, "nombre", "id");
+        String attractionCatalog = formatAttractionCatalogListing(attractionRoot, cityRoot, "nombre", "id");
+
+        return template
+                .replace(CITY_CATALOG_TOKEN, cityCatalog)
+                .replace(ATTRACTION_CATALOG_TOKEN, attractionCatalog);
+    }
+
+    private JsonNode fetchCatalogArray(String baseUrl, String path) throws IOException, InterruptedException {
+        String url = joinUrl(baseUrl, path);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(timeout)
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new FrameworkException("Catalog request failed with status " + response.statusCode() + " for " + url);
+        }
+
+        JsonNode root = objectMapper.readTree(response.body());
+        if (!root.isArray()) {
+            throw new FrameworkException("Catalog response must be a JSON array for " + url);
+        }
+
+        return root;
+    }
+
+    private String formatCatalogListing(JsonNode root, String labelField, String idField) {
+        StringBuilder builder = new StringBuilder();
+        for (JsonNode item : root) {
+            String id = textValue(item, idField, "id");
+            String label = textValue(item, labelField, "nombre", "name");
+            if (id == null || label == null) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append('\n');
+            }
+            builder.append("- ").append(label).append(" -> ").append(id);
+        }
+
+        return builder.length() == 0 ? "- (no catalog entries)" : builder.toString();
+    }
+
+    private String formatAttractionCatalogListing(JsonNode attractionRoot,
+                                                  JsonNode cityRoot,
+                                                  String labelField,
+                                                  String idField) {
+        Map<String, String> cityNameById = new LinkedHashMap<>();
+        for (JsonNode cityItem : cityRoot) {
+            String cityId = textValue(cityItem, "id");
+            String cityName = textValue(cityItem, "nombre", "name");
+            if (cityId != null && cityName != null) {
+                cityNameById.put(cityId, cityName);
+            }
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (JsonNode item : attractionRoot) {
+            String id = textValue(item, idField, "id");
+            String label = textValue(item, labelField, "nombre", "name");
+            if (id == null || label == null) {
+                continue;
+            }
+            String cityId = textValue(item, "ciudadId", "cityId");
+            String cityName = cityId == null ? null : cityNameById.get(cityId);
+
+            if (builder.length() > 0) {
+                builder.append('\n');
+            }
+            builder.append("- ").append(label).append(" -> ").append(id);
+            if (cityId != null) {
+                builder.append(" (ciudad: ");
+                if (cityName != null) {
+                    builder.append(cityName).append(" / ");
+                }
+                builder.append(cityId).append(')');
+            }
+        }
+
+        return builder.length() == 0 ? "- (no catalog entries)" : builder.toString();
+    }
+
+    private String selectedSystemPrompt(Map<String, Object> payload) {
+        return String.valueOf(payload.getOrDefault("system", env("PROXY_SYSTEM_PROMPT", DEFAULT_SYSTEM_PROMPT)));
+    }
+
+    private String stringOption(Map<String, Object> payload, String key, String envName, String defaultValue) {
+        Object value = payload.get(key);
+        if (value != null && !String.valueOf(value).isBlank()) {
+            return String.valueOf(value).trim();
+        }
+        return env(envName, defaultValue);
+    }
+
+    private String textValue(JsonNode node, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            JsonNode field = node.get(fieldName);
+            if (field != null && field.isTextual() && !field.asText().isBlank()) {
+                return field.asText().trim();
+            }
+        }
+        return null;
+    }
+
+    private String joinUrl(String baseUrl, String path) {
+        return baseUrl.replaceAll("/+$", "") + "/" + path.replaceAll("^/+", "");
+    }
+
+    private String env(String name, String defaultValue) {
+        String value = System.getenv(name);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        return value.trim();
     }
 
     private InterpretationResult parseInterpretation(String rawBody) throws IOException {
@@ -87,7 +252,11 @@ public class HttpLlmIntentInterpreter implements IntentInterpreter {
             effectiveNode = objectMapper.readTree(root.get("text").asText());
         } else if (root.has("content") && root.get("content").isTextual()) {
             effectiveNode = objectMapper.readTree(root.get("content").asText());
+        } else if (root.has("response") && root.get("response").isTextual()) {
+            effectiveNode = objectMapper.readTree(root.get("response").asText());
         }
+
+        LOGGER.debug("RESPUESTA_JSON_LLM: {}", effectiveNode.toString());
 
         String intent = effectiveNode.path("intent").asText(null);
         Double confidence = effectiveNode.has("confidence") ? effectiveNode.path("confidence").asDouble() : null;

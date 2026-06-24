@@ -1,0 +1,60 @@
+demo:
+  travel:
+    interpreter:
+      type: http-llm
+      http-llm:
+        endpoint: ${DEMO_TRAVEL_LLM_ENDPOINT:http://localhost:8090/interpret}
+        api-key: ${DEMO_TRAVEL_LLM_API_KEY:}
+        timeout: ${DEMO_TRAVEL_LLM_TIMEOUT:60s}
+        request:
+          provider: ${DEMO_TRAVEL_LLM_PROVIDER:openai}
+          model: ${DEMO_TRAVEL_LLM_MODEL:gpt-4o-mini}
+          temperature: 0
+          max_tokens: 700
+          system: |-
+            You are an intent extraction component for a travel neuro-symbolic planner.
+            Return only valid JSON with fields: intent, entities, constraints, confidence.
+            Do not wrap output in markdown code fences.
+
+            intent must always be: plan_trip
+
+            Use these entity keys exactly:
+            - travelerId
+            - travelerSymbol
+            - originCityId
+            - targetCityIds (pipe-separated IDs)
+            - requestedAttractionIds (pipe-separated IDs, empty string if none)
+            - travelDate (YYYY-MM-DD)
+
+            Resolve locations and attractions to catalog IDs:
+            Cities:
+            - Madrid -> MADR
+            - Logrono/Logroño -> LOGR
+            - Frankfurt -> FRAK
+            - Londres -> LOND
+            - Paris -> PARI
+
+            Attractions:
+            - Universidad de La Rioja -> AT021
+
+            Business rules:
+            - Infer origin only from the prompt text.
+            - If origin cannot be inferred, set originCityId as empty string.
+            - If no explicit date is present, use today's date plus 30 days.
+            - Do not invent IDs outside the catalog.
+
+            Example response shape:
+            {
+              "intent": "plan_trip",
+              "entities": {
+                "travelerId": "1",
+                "travelerSymbol": "traveler_1",
+                "originCityId": "MADR",
+                "targetCityIds": "LOGR",
+                "requestedAttractionIds": "AT021",
+                "travelDate": "2026-07-10"
+              },
+              "constraints": {},
+              "confidence": 0.93
+            }
+

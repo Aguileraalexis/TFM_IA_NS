@@ -64,20 +64,20 @@ public class DefaultExecutionOrchestrator implements ExecutionOrchestrator {
             PlanResult planResult = planner.plan(domainPddl, problem, plannerOptions);
 
             if (!planResult.success() || planResult.actions().isEmpty()) {
-                LOGGER.warn("No valid plan found: {}", planResult.message());
+                LOGGER.warn("No se encontro un plan valido: {}", planResult.message());
                 return ExecutionResult.failure(planResult.message(), executedActions, replans, state);
             }
 
             boolean replanNeeded = false;
             for (PlannedAction plannedAction : planResult.actions()) {
-                LOGGER.info("Executing action {}", plannedAction.asInvocation());
+                LOGGER.info("Ejecutando accion {}", plannedAction.asInvocation());
                 ActionOutcome outcome = actionExecutor.execute(plannedAction, executionContext);
                 executedActions.add(plannedAction.asInvocation());
                 state = stateUpdater.update(state, plannedAction, outcome);
                 stateStore.save(state);
 
                 if (!outcome.success()) {
-                    LOGGER.info("Action {} failed, triggering replanning", plannedAction.name());
+                    LOGGER.info("La accion {} fallo, se relanza la planificacion", plannedAction.name());
                     replans++;
                     replanNeeded = true;
                     break;
@@ -85,7 +85,7 @@ public class DefaultExecutionOrchestrator implements ExecutionOrchestrator {
             }
 
             if (!replanNeeded) {
-                return ExecutionResult.success("Execution completed successfully", executedActions, replans, state);
+                return ExecutionResult.success("Ejecucion completada correctamente", executedActions, replans, state);
             }
         }
     }
