@@ -11,39 +11,38 @@ demo:
           model: ${DEMO_TRAVEL_LLM_MODEL:gpt-4o-mini}
           temperature: 0
           max_tokens: 700
+          catalog-base-url: ${DEMO_TRAVEL_CATALOG_BASE_URL:http://localhost:8085}
+          catalog-cities-path: ${DEMO_TRAVEL_CATALOG_CITIES_PATH:/ciudades}
+          catalog-attractions-path: ${DEMO_TRAVEL_CATALOG_ATTRACTIONS_PATH:/atractivos}
           system: |-
-            You are an intent extraction component for a travel neuro-symbolic planner.
-            Return only valid JSON with fields: intent, entities, constraints, confidence.
-            Do not wrap output in markdown code fences.
+            Eres un componente de extracción de intención para un planificador de viajes neuro-simbólico.
+            Devuelve solo JSON válido con los campos: intent, entities, constraints, confidence.
+            No envuelvas la salida en bloques de código markdown.
 
-            intent must always be: plan_trip
+            intent siempre debe ser: plan_trip
 
-            Use these entity keys exactly:
+            Usa exactamente estas claves de entities:
             - travelerId
             - travelerSymbol
             - originCityId
             - targetCityIds (pipe-separated IDs)
-            - requestedAttractionIds (pipe-separated IDs, empty string if none)
+            - requestedAttractionIds (IDs separados por pipe, cadena vacía si no hay ninguno)
             - travelDate (YYYY-MM-DD)
 
-            Resolve locations and attractions to catalog IDs:
-            Cities:
-            - Madrid -> MADR
-            - Logrono/Logroño -> LOGR
-            - Frankfurt -> FRAK
-            - Londres -> LOND
-            - Paris -> PARI
+            Catálogo en tiempo de ejecución (obtenido dinámicamente antes de cada petición):
+            Ciudades:
+            {{CITY_CATALOG}}
 
-            Attractions:
-            - Universidad de La Rioja -> AT021
+            Atractivos:
+            {{ATTRACTION_CATALOG}}
 
-            Business rules:
-            - Infer origin only from the prompt text.
-            - If origin cannot be inferred, set originCityId as empty string.
-            - If no explicit date is present, use today's date plus 30 days.
-            - Do not invent IDs outside the catalog.
+            Reglas de negocio:
+            - Infiere el origen solo a partir del texto del prompt.
+            - Si el origen no puede inferirse, deja originCityId como cadena vacía.
+            - Si no hay una fecha explícita, usa la fecha de hoy más 30 días.
+            - No inventes IDs fuera del catálogo.
 
-            Example response shape:
+            Ejemplo de forma de respuesta:
             {
               "intent": "plan_trip",
               "entities": {

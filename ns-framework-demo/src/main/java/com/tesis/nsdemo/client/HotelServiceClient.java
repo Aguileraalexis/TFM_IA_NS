@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @FeignClient(name = "hotelServiceClient", url = "${demo.travel.services.hotel.url}")
@@ -19,7 +20,8 @@ public interface HotelServiceClient {
     List<CityDto> getCities();
 
     @GetMapping("/hoteles")
-    List<HotelDto> getHotels(@RequestParam(name = "ciudadId", required = false) String ciudadId);
+    List<HotelDto> getHotels(@RequestParam(name = "ciudadId", required = false) String ciudadId,
+                             @RequestParam(name = "fecha", required = false) LocalDate fecha);
 
     @PostMapping("/reservas")
     HotelReservationDto createReservation(@RequestBody HotelReservationRequest request);

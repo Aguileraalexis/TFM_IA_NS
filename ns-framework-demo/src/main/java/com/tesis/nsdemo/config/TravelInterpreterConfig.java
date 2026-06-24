@@ -31,7 +31,7 @@ public class TravelInterpreterConfig {
                                                       TravelDemoProperties properties) {
         TravelDemoProperties.HttpLlmProperties llmProperties = properties.getInterpreter().getHttpLlm();
         if (!StringUtils.hasText(llmProperties.getEndpoint())) {
-            throw new IllegalStateException("demo.travel.interpreter.http-llm.endpoint must be configured when type=http-llm");
+            throw new IllegalStateException("demo.travel.interpreter.http-llm.endpoint debe configurarse cuando type=http-llm");
         }
 
         Duration timeout = llmProperties.getTimeout() == null ? Duration.ofSeconds(30) : llmProperties.getTimeout();

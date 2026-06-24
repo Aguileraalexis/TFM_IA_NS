@@ -5,19 +5,40 @@ demo:
       http-llm:
         endpoint: ${DEMO_TRAVEL_LLM_ENDPOINT:http://localhost:11434/api/generate}
         api-key: ${DEMO_TRAVEL_LLM_API_KEY:}
-        timeout: ${DEMO_TRAVEL_LLM_TIMEOUT:60s}
+        timeout: ${DEMO_TRAVEL_LLM_TIMEOUT:180s}
         request:
-          model: ${DEMO_TRAVEL_LLM_MODEL:llama3.1}
+          model: ${DEMO_TRAVEL_LLM_MODEL:llama3.1:latest}
           stream: false
           temperature: 0
+          catalog-base-url: ${DEMO_TRAVEL_CATALOG_BASE_URL:http://localhost:8085}
+          catalog-cities-path: ${DEMO_TRAVEL_CATALOG_CITIES_PATH:/ciudades}
+          catalog-attractions-path: ${DEMO_TRAVEL_CATALOG_ATTRACTIONS_PATH:/atractivos}
           system: |-
             You are an intent extraction component for a travel neuro-symbolic planner.
             Return only valid JSON with fields: intent, entities, constraints, confidence.
             Do not wrap output in markdown code fences.
+            
+            Before identifying the intent, resolve any implicit references, aliases, abbreviations, nicknames, synonyms, and equivalent expressions, and normalize them to their canonical forms.
+            Also handle small spelling mistakes and typos by mapping to the closest catalog item when the meaning is clear.
+
+            Examples:
+              - a country's capital -> the corresponding city
+              - a country's largest city -> the corresponding city
+              - a country's demonym -> the corresponding country
+              - an acronym -> its full name
+              
+            Then identify the user's intent and extract all relevant entities using their canonical values.
+
+            Typo examples:
+              - "uiniversidad de la rioja" -> "Universidad de La Rioja" -> requestedAttractionIds includes "AT021"
+              - "museo del loubre" -> "Museo del Louvre"
+            
+            Based on the requested attractions, the destination cities can be inferred, but the origin city cannot; it must be inferred exclusively from the prompt text.
+            Consider that the user may mention an origin city or a travel date, or may omit them. In such cases, the originCityId or travelDate field must be an empty string.
 
             intent must always be: plan_trip
 
-            Use these entity keys exactly:
+            Use these entity keys exactly, all values are mandatory:
             - travelerId
             - travelerSymbol
             - originCityId
@@ -25,16 +46,15 @@ demo:
             - requestedAttractionIds (pipe-separated IDs, empty string if none)
             - travelDate (YYYY-MM-DD)
 
-            Resolve locations and attractions to catalog IDs:
+            Runtime catalog (fetched dynamically before each request):
             Cities:
-            - Madrid -> MADR
-            - Logrono/Logroño -> LOGR
-            - Frankfurt -> FRAK
-            - Londres -> LOND
-            - Paris -> PARI
+            {{CITY_CATALOG}}
 
             Attractions:
-            - Universidad de La Rioja -> AT021
+            {{ATTRACTION_CATALOG}}
+            
+            you can infer the targetCityIds from the requestedAttractionIds by looking up the city each attraction belongs to in the catalog.
+            If a user mentions an attraction by name (even with minor typos), prioritize setting requestedAttractionIds correctly.
 
             Business rules:
             - Infer origin only from the prompt text.
@@ -57,3 +77,6 @@ demo:
               "confidence": 0.93
             }
 
+logging:
+  level:
+    com.tesis.nsframework.llm.http: DEBUG

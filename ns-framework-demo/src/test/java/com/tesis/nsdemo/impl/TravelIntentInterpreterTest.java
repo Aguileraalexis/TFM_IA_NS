@@ -5,12 +5,14 @@ import com.tesis.nsdemo.client.dto.CityDto;
 import com.tesis.nsdemo.config.TravelDemoProperties;
 import com.tesis.nsdemo.travel.TravelCatalogService;
 import com.tesis.nsdemo.travel.TravelCatalogSnapshot;
+import com.tesis.nsframework.core.exception.FrameworkException;
 import com.tesis.nsframework.core.model.InterpretationResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TravelIntentInterpreterTest {
 
@@ -29,16 +31,12 @@ class TravelIntentInterpreterTest {
     }
 
     @Test
-    void shouldFallbackToConfiguredOriginWhenPromptDoesNotMentionOneExplicitly() {
+    void shouldThrowErrorWhenOriginCityCannotBeInferredFromPrompt() {
         TravelIntentInterpreter interpreter = new TravelIntentInterpreter(catalogService(), demoProperties());
 
-        InterpretationResult result = interpreter.interpret(
+        assertThrows(FrameworkException.class, () -> interpreter.interpret(
                 "Quiero visitar Universidad de La Rioja el 2026-07-10",
-                null);
-
-        assertEquals("MADR", result.entities().get("originCityId"));
-        assertEquals("LOGR", result.entities().get("targetCityIds"));
-        assertEquals("AT021", result.entities().get("requestedAttractionIds"));
+                null));
     }
 
     private static TravelCatalogService catalogService() {
@@ -62,7 +60,6 @@ class TravelIntentInterpreterTest {
 
     private static TravelDemoProperties demoProperties() {
         TravelDemoProperties properties = new TravelDemoProperties();
-        properties.setDefaultOriginCityId("MADR");
         properties.setDefaultTravelerId("1");
         properties.setDefaultTravelDateOffsetDays(30);
         return properties;

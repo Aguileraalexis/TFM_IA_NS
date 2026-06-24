@@ -22,7 +22,7 @@ class TravelPlanningProblemBuilderTest {
     void shouldBuildProblemUsingLiveLikeCatalogData() {
         TravelCatalogService catalogService = new TravelCatalogService(null, null, null) {
             @Override
-            public TravelCatalogSnapshot fetchSnapshot() {
+            public TravelCatalogSnapshot fetchSnapshot(java.time.LocalDate travelDate) {
                 return new TravelCatalogSnapshot(
                         List.of(new CityDto("MADR", "Madrid", "ESPA"), new CityDto("PARI", "Paris", "FRAN")),
                         List.of(new AttractionDto("AT017", "PARI", "Torre Eiffel", "Monumento")),
@@ -56,9 +56,8 @@ class TravelPlanningProblemBuilderTest {
         assertTrue(problem.goalExpression().contains("(visited-city PARI)"));
         assertTrue(problem.goalExpression().contains("(hotel-booked traveler_1 HT016 PARI)"));
         assertTrue(problem.goalExpression().contains("(visited-attraction AT017)"));
-        // Verify the traveler object is declared with its PDDL type
+        // Verifica que el objeto del viajero se declara con su tipo PDDL
         assertTrue(problem.objects().contains("traveler_1 - traveler"),
-                "Problem objects must use typed PDDL syntax for :typing compatibility");
+                "Los objetos del problema deben usar sintaxis PDDL tipada para compatibilidad con :typing");
     }
 }
-

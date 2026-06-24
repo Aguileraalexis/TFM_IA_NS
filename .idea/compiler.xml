@@ -2,20 +2,29 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+      <profile name="Annotation profile for todo-parent" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.36/lombok-1.18.36.jar" />
+        </processorPath>
+        <module name="mock-hotel-booking-service" />
+        <module name="mock-tourist-attractions-service" />
+        <module name="ns-framework-demo-app" />
+        <module name="mock-flight-booking-service" />
+      </profile>
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="mock-hotel-booking-service" />
-        <module name="mock-tourist-attractions-service" />
+        <module name="ns-framework-core" />
         <module name="ns-framework-planner-docker" />
         <module name="ns-framework-starter" />
         <module name="ns-framework-config" />
-        <module name="ns-framework-executor-rest" />
-        <module name="mock-flight-booking-service" />
-        <module name="ns-framework-core" />
-        <module name="ns-framework-demo-app" />
         <module name="ns-framework-llm-http" />
+        <module name="ns-framework-executor-rest" />
       </profile>
     </annotationProcessing>
   </component>

@@ -21,14 +21,16 @@ import com.tesis.nsframework.core.port.PlanningProblemBuilder;
 import com.tesis.nsframework.core.port.StateStore;
 import com.tesis.nsframework.core.port.StateUpdater;
 import com.tesis.nsframework.core.model.DomainMetadata;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
+@Slf4j
 public class TravelExecutionOrchestrator implements ExecutionOrchestrator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TravelExecutionOrchestrator.class);
 
     private final IntentInterpreter intentInterpreter;
     private final GoalMapper goalMapper;
@@ -70,6 +72,17 @@ public class TravelExecutionOrchestrator implements ExecutionOrchestrator {
         }
 
         InterpretationResult interpretation = intentInterpreter.interpret(userInput, domainMetadata);
+        String validationError = validateInterpretation(interpretation);
+        if (validationError != null) {
+            log.warn("Respuesta invalida del interpreter. error={}, rawResponse={}",
+                    validationError,
+                    interpretation == null ? null : interpretation.rawResponse());
+            return ExecutionResult.failure("Respuesta invalida del interpreter: " + validationError,
+                    List.of(),
+                    0,
+                    new SymbolicState());
+        }
+
         GoalSpec goalSpec = goalMapper.map(interpretation, domainMetadata);
         SymbolicState state = new SymbolicState();
         stateStore.save(state);
@@ -77,20 +90,21 @@ public class TravelExecutionOrchestrator implements ExecutionOrchestrator {
         interpretation.constraints().forEach(executionContext::put);
         List<String> executedActions = new ArrayList<>();
 
-        String domainPddl = domainPddlGenerator.generate();
+        java.time.LocalDate travelDate = extractTravelDate(interpretation);
+        String domainPddl = domainPddlGenerator.generate(travelDate);
         PlanningProblem problem = planningProblemBuilder.build(state, goalSpec);
-        // Enrich the execution context with planning metadata (airline routes, hotels, dates)
-        // so the action executor can resolve all parameters without relying on action-level metadata
-        // (which DockerPlanner does not populate — it only parses action name and arguments).
+        // Enriquecer el contexto de ejecucion con metadatos de planificacion (rutas, hoteles, fechas)
+        // para que el ejecutor de acciones resuelva parametros sin depender de metadatos por accion
+        // (DockerPlanner no los completa: solo parsea nombre y argumentos de la accion).
         problem.metadata().forEach(executionContext::put);
         PlanResult planResult = planner.plan(domainPddl, problem, plannerOptions);
         if (!planResult.success() || planResult.actions().isEmpty()) {
-            LOGGER.warn("No valid travel plan found: {}", planResult.message());
+            log.warn("No se encontro un plan de viaje valido: {}", planResult.message());
             return ExecutionResult.failure(planResult.message(), executedActions, 0, state);
         }
 
         for (PlannedAction plannedAction : planResult.actions()) {
-            LOGGER.info("Executing travel action {}", plannedAction.asInvocation());
+            log.info("Ejecutando accion de viaje {}", plannedAction.asInvocation());
             ActionOutcome outcome = actionExecutor.execute(plannedAction, executionContext);
             executedActions.add(plannedAction.asInvocation());
             state = stateUpdater.update(state, plannedAction, outcome);
@@ -101,7 +115,76 @@ public class TravelExecutionOrchestrator implements ExecutionOrchestrator {
             }
         }
 
-        return ExecutionResult.success("Travel execution completed successfully", executedActions, 0, state);
+        return ExecutionResult.success("Viaje completado exitosamente", executedActions, 0, state);
+    }
+
+    private String validateInterpretation(InterpretationResult interpretation) {
+        if (interpretation == null) {
+            return "faltan datos de interpretacion";
+        }
+        if (interpretation.intent() == null || interpretation.intent().isBlank()) {
+            return "intent es obligatorio";
+        }
+        if (!domainMetadata.supportsIntent(interpretation.intent())) {
+            return "intent no soportado: " + interpretation.intent();
+        }
+
+        Map<String, Object> entities = interpretation.entities();
+        String originCityId = requiredEntityAsText(entities, "originCityId");
+        if (originCityId == null) {
+            return "entities.originCityId es obligatorio";
+        }
+
+        String targetCityIds = requiredEntityAsText(entities, "targetCityIds");
+        if (targetCityIds == null || !hasPipeSeparatedValues(targetCityIds)) {
+            return "entities.targetCityIds debe incluir al menos una ciudad";
+        }
+
+        String travelDate = requiredEntityAsText(entities, "travelDate");
+        if (travelDate == null) {
+            return "entities.travelDate es obligatorio";
+        }
+        try {
+            LocalDate.parse(travelDate);
+        } catch (Exception ex) {
+            return "entities.travelDate debe tener formato YYYY-MM-DD";
+        }
+
+        if (interpretation.confidence() != null
+                && (interpretation.confidence() < 0.0 || interpretation.confidence() > 1.0)) {
+            return "confidence debe estar en el rango [0, 1]";
+        }
+
+        return null;
+    }
+
+    private String requiredEntityAsText(Map<String, Object> entities, String key) {
+        Object value = entities.get(key);
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value).trim();
+        return text.isBlank() ? null : text;
+    }
+
+    private boolean hasPipeSeparatedValues(String raw) {
+        return Stream.of(raw.split("\\|"))
+                .map(String::trim)
+                .anyMatch(value -> !value.isBlank());
+    }
+
+    private java.time.LocalDate extractTravelDate(InterpretationResult interpretation) {
+        Object dateObj = interpretation.entities().get("travelDate");
+        if (dateObj instanceof String dateStr) {
+            try {
+                return java.time.LocalDate.parse(dateStr);
+            } catch (Exception ex) {
+                log.warn("No se pudo parsear la fecha de viaje: {}", dateStr, ex);
+                return null;
+            }
+        } else if (dateObj instanceof java.time.LocalDate date) {
+            return date;
+        }
+        return null;
     }
 }
-

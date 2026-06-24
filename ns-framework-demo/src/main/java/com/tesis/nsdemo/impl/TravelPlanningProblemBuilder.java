@@ -32,7 +32,7 @@ public class TravelPlanningProblemBuilder implements PlanningProblemBuilder {
     @Override
     public PlanningProblem build(SymbolicState state, GoalSpec goalSpec) {
         TravelRequestSpec request = TravelRequestSpec.fromGoalSpec(goalSpec);
-        TravelCatalogSnapshot snapshot = travelCatalogService.fetchSnapshot();
+        TravelCatalogSnapshot snapshot = travelCatalogService.fetchSnapshot(request.travelDate());
 
         if (request.originCityId() == null || request.targetCityIds().isEmpty()) {
             throw new FrameworkException("Travel planning requires originCityId and at least one target city");
@@ -94,7 +94,7 @@ public class TravelPlanningProblemBuilder implements PlanningProblemBuilder {
         return new PlanningProblem(
                 "travel-problem-" + System.currentTimeMillis(),
                 TravelDomainPddlGenerator.DOMAIN_NAME,
-                // The traveler must be declared with its type so the PDDL problem is valid with :typing
+                // El viajero debe declararse con su tipo para que el PDDL sea valido con :typing
                 Set.of(request.travelerSymbol() + " - traveler"),
                 initFacts,
                 goalExpression,
@@ -106,4 +106,3 @@ public class TravelPlanningProblemBuilder implements PlanningProblemBuilder {
         return origin + "->" + destination;
     }
 }
-

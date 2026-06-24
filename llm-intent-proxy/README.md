@@ -90,9 +90,14 @@ Extra fields sent by `HttpLlmIntentInterpreter` under `request.*` are passed to 
 - `max_tokens`
 - `system`
 - `provider` (override per-request)
+- `catalog-base-url`
+- `catalog-cities-path`
+- `catalog-attractions-path`
 
 ## Notes
 
 - This proxy targets `OpenAI /v1/chat/completions` and `Anthropic /v1/messages`.
 - It enforces JSON output and returns it in `content` so the existing Java parser can consume it.
+- The travel catalog context is rendered at runtime using `{{CITY_CATALOG}}` and `{{ATTRACTION_CATALOG}}` placeholders before the upstream LLM call.
+- By default the catalog is fetched from `http://localhost:8085/ciudades` and `http://localhost:8085/atractivos`, but you can override those values per request or via environment variables.
 

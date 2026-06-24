@@ -1,5 +1,6 @@
 import json
 import os
+from collections.abc import Iterable
 from typing import Any
 
 import httpx
@@ -11,6 +12,8 @@ DEFAULT_SYSTEM_PROMPT = (
     "Return only valid JSON with fields: intent, entities, constraints, confidence. "
     "Do not add markdown fences."
 )
+CITY_CATALOG_TOKEN = "{{CITY_CATALOG}}"
+ATTRACTION_CATALOG_TOKEN = "{{ATTRACTION_CATALOG}}"
 
 
 class InterpretRequest(BaseModel):
@@ -47,6 +50,13 @@ def _selected_system_prompt(payload: dict[str, Any]) -> str:
     return str(payload.get("system") or _env("PROXY_SYSTEM_PROMPT", DEFAULT_SYSTEM_PROMPT))
 
 
+def _catalog_option(payload: dict[str, Any], key: str, env_name: str, default_value: str) -> str:
+    value = payload.get(key)
+    if value is not None and str(value).strip():
+        return str(value).strip()
+    return _env(env_name, default_value) or default_value
+
+
 def _as_float(value: Any, default: float) -> float:
     if value is None:
         return default
@@ -65,6 +75,56 @@ def _as_int(value: Any, default: int) -> int:
         return default
 
 
+def _join_url(base_url: str, path: str) -> str:
+    return base_url.rstrip("/") + "/" + path.lstrip("/")
+
+
+def _catalog_lines(items: Iterable[dict[str, Any]], label_fields: tuple[str, ...], id_field: str = "id") -> str:
+    lines: list[str] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        label = next((str(item.get(field)).strip() for field in label_fields if item.get(field)), None)
+        id_value = item.get(id_field) or item.get("id")
+        if not label or not id_value:
+            continue
+        lines.append(f"- {label} -> {id_value}")
+    return "\n".join(lines) if lines else "- (no catalog entries)"
+
+
+async def _fetch_catalog_listing(base_url: str, path: str, label_fields: tuple[str, ...]) -> str:
+    url = _join_url(base_url, path)
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(url)
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Catalog request failed: {exc}") from exc
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=f"Catalog error: {response.text}")
+
+    data = response.json()
+    if not isinstance(data, list):
+        raise HTTPException(status_code=502, detail=f"Catalog response must be a JSON array: {url}")
+
+    return _catalog_lines(data, label_fields)
+
+
+async def _render_system_prompt(payload: dict[str, Any]) -> str:
+    template = _selected_system_prompt(payload)
+    if CITY_CATALOG_TOKEN not in template and ATTRACTION_CATALOG_TOKEN not in template:
+        return template
+
+    base_url = _catalog_option(payload, "catalog-base-url", "DEMO_TRAVEL_CATALOG_BASE_URL", "http://localhost:8085")
+    cities_path = _catalog_option(payload, "catalog-cities-path", "DEMO_TRAVEL_CATALOG_CITIES_PATH", "/ciudades")
+    attractions_path = _catalog_option(payload, "catalog-attractions-path", "DEMO_TRAVEL_CATALOG_ATTRACTIONS_PATH", "/atractivos")
+
+    city_catalog = await _fetch_catalog_listing(base_url, cities_path, ("nombre", "name"))
+    attraction_catalog = await _fetch_catalog_listing(base_url, attractions_path, ("nombre", "name"))
+
+    return template.replace(CITY_CATALOG_TOKEN, city_catalog).replace(ATTRACTION_CATALOG_TOKEN, attraction_catalog)
+
+
 async def _call_openai(payload: dict[str, Any]) -> str:
     api_key = _env("OPENAI_API_KEY")
     if not api_key:
@@ -77,7 +137,7 @@ async def _call_openai(payload: dict[str, Any]) -> str:
     request_body = {
         "model": model,
         "messages": [
-            {"role": "system", "content": _selected_system_prompt(payload)},
+            {"role": "system", "content": await _render_system_prompt(payload)},
             {"role": "user", "content": payload["prompt"]},
         ],
         "temperature": _as_float(payload.get("temperature"), 0.0),
@@ -118,7 +178,7 @@ async def _call_anthropic(payload: dict[str, Any]) -> str:
 
     request_body = {
         "model": model,
-        "system": _selected_system_prompt(payload),
+        "system": await _render_system_prompt(payload),
         "messages": [{"role": "user", "content": payload["prompt"]}],
         "temperature": _as_float(payload.get("temperature"), 0.0),
         "max_tokens": _as_int(payload.get("max_tokens"), 512),

@@ -3,10 +3,17 @@ package com.tesis.nsdemo.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @ConfigurationProperties(prefix = "demo.travel")
 public class TravelDemoProperties {
     private String defaultTravelerId = "1";
     private int defaultTravelDateOffsetDays = 30;
+
+    @NestedConfigurationProperty
+    private InterpreterProperties interpreter = new InterpreterProperties();
 
     @NestedConfigurationProperty
     private PlannerProperties planner = new PlannerProperties();
@@ -27,6 +34,14 @@ public class TravelDemoProperties {
         this.defaultTravelDateOffsetDays = defaultTravelDateOffsetDays;
     }
 
+    public InterpreterProperties getInterpreter() {
+        return interpreter;
+    }
+
+    public void setInterpreter(InterpreterProperties interpreter) {
+        this.interpreter = interpreter;
+    }
+
     public PlannerProperties getPlanner() {
         return planner;
     }
@@ -35,9 +50,71 @@ public class TravelDemoProperties {
         this.planner = planner;
     }
 
+    public static class InterpreterProperties {
+        private String type = "rule-based";
+
+        @NestedConfigurationProperty
+        private HttpLlmProperties httpLlm = new HttpLlmProperties();
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public HttpLlmProperties getHttpLlm() {
+            return httpLlm;
+        }
+
+        public void setHttpLlm(HttpLlmProperties httpLlm) {
+            this.httpLlm = httpLlm;
+        }
+    }
+
+    public static class HttpLlmProperties {
+        private String endpoint;
+        private String apiKey;
+        private Duration timeout = Duration.ofSeconds(30);
+        private Map<String, Object> request = new LinkedHashMap<>();
+
+        public String getEndpoint() {
+            return endpoint;
+        }
+
+        public void setEndpoint(String endpoint) {
+            this.endpoint = endpoint;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        public Duration getTimeout() {
+            return timeout;
+        }
+
+        public void setTimeout(Duration timeout) {
+            this.timeout = timeout;
+        }
+
+        public Map<String, Object> getRequest() {
+            return request;
+        }
+
+        public void setRequest(Map<String, Object> request) {
+            this.request = request;
+        }
+    }
+
     public static class PlannerProperties {
         private String dockerImage = "aibasel/downward";
-        private String containerCommand = "fast-downward.py --plan-file /planner/plan.txt /planner/domain.pddl /planner/problem.pddl --search 'astar(lmcut())'";
+        private String containerCommand = "--plan-file /planner/plan.txt /planner/domain.pddl /planner/problem.pddl --search 'astar(lmcut())'";
         private boolean planWrittenToFile = true;
         private int timeoutSeconds = 120;
 

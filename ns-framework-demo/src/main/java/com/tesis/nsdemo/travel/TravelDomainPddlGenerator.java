@@ -2,7 +2,6 @@ package com.tesis.nsdemo.travel;
 
 import com.tesis.nsdemo.client.dto.AttractionDto;
 import com.tesis.nsdemo.client.dto.CityDto;
-import com.tesis.nsdemo.client.dto.FlightDto;
 import com.tesis.nsdemo.client.dto.HotelDto;
 import org.springframework.stereotype.Service;
 
@@ -19,9 +18,12 @@ public class TravelDomainPddlGenerator {
     }
 
     public String generate() {
-        TravelCatalogSnapshot snapshot = travelCatalogService.fetchSnapshot();
+        return generate(null);
+    }
+
+    public String generate(java.time.LocalDate travelDate) {
+        TravelCatalogSnapshot snapshot = travelCatalogService.fetchSnapshot(travelDate);
         String constants = constantsBlock(snapshot);
-        String flightActions = flightActions(snapshot);
         return "(define (domain " + DOMAIN_NAME + ")\n" +
                 "  (:requirements :strips :typing)\n" +
                 "  (:types traveler city hotel attraction)\n" +
@@ -36,7 +38,7 @@ public class TravelDomainPddlGenerator {
                 "    (visited-city ?c - city)\n" +
                 "    (visited-attraction ?a - attraction)\n" +
                 "  )\n\n" +
-                flightActions +
+                genericFlightAction() +
                 "  (:action book-hotel\n" +
                 "    :parameters (?t - traveler ?h - hotel ?c - city)\n" +
                 "    :precondition (and (at ?t ?c) (hotel-in-city ?h ?c))\n" +
@@ -50,27 +52,15 @@ public class TravelDomainPddlGenerator {
                 ")\n";
     }
 
-    private String flightActions(TravelCatalogSnapshot snapshot) {
-        StringBuilder builder = new StringBuilder();
-        snapshot.flights().stream()
-                .map(this::routeAction)
-                .distinct()
-                .forEach(builder::append);
-        return builder.toString();
-    }
-
-    private String routeAction(FlightDto flight) {
-        String origin = flight.ciudadOrigenId();
-        String destination = flight.ciudadDestinoId();
-        String actionName = "book-flight-" + TravelSymbols.sanitize(origin) + "-" + TravelSymbols.sanitize(destination);
-        return "  (:action " + actionName + "\n" +
-                "    :parameters (?t - traveler)\n" +
-                "    :precondition (and (at ?t " + origin + ") (flight-available " + origin + " " + destination + "))\n" +
+    private String genericFlightAction() {
+        return "  (:action book-flight\n" +
+                "    :parameters (?t - traveler ?from - city ?to - city)\n" +
+                "    :precondition (and (at ?t ?from) (flight-available ?from ?to))\n" +
                 "    :effect (and\n" +
-                "      (not (at ?t " + origin + "))\n" +
-                "      (at ?t " + destination + ")\n" +
-                "      (visited-city " + destination + ")\n" +
-                "      (flight-booked ?t " + origin + " " + destination + ")\n" +
+                "      (not (at ?t ?from))\n" +
+                "      (at ?t ?to)\n" +
+                "      (visited-city ?to)\n" +
+                "      (flight-booked ?t ?from ?to)\n" +
                 "    )\n" +
                 "  )\n\n";
     }

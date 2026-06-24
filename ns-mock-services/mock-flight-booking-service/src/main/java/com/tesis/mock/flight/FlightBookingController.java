@@ -76,17 +76,19 @@ public class FlightBookingController {
         return ordenar(usuarios.values().stream().toList(), UsuarioDto::id);
     }
 
-    @Operation(summary = "Listar vuelos", description = "Devuelve vuelos filtrados opcionalmente por ciudad origen, destino y aerolínea")
+    @Operation(summary = "Listar vuelos", description = "Devuelve vuelos filtrados opcionalmente por ciudad origen, destino, aerolínea y fecha con plazas disponibles")
     @GetMapping("/vuelos")
     public List<VueloDto> obtenerVuelos(
             @Parameter(description = "ID ciudad de origen") @RequestParam(name = "ciudadOrigenId", required = false) String ciudadOrigenId,
             @Parameter(description = "ID ciudad de destino") @RequestParam(name = "ciudadDestinoId", required = false) String ciudadDestinoId,
-            @Parameter(description = "ID de la aerolínea") @RequestParam(name = "aerolineaId", required = false) String aerolineaId
+            @Parameter(description = "ID de la aerolínea") @RequestParam(name = "aerolineaId", required = false) String aerolineaId,
+            @Parameter(description = "Fecha para filtrar solo vuelos con plazas disponibles") @RequestParam(name = "fecha", required = false) LocalDate fecha
     ) {
         return vuelos.values().stream()
                 .filter(vuelo -> ciudadOrigenId == null || vuelo.ciudadOrigenId().equals(ciudadOrigenId))
                 .filter(vuelo -> ciudadDestinoId == null || vuelo.ciudadDestinoId().equals(ciudadDestinoId))
                 .filter(vuelo -> aerolineaId == null || vuelo.aerolineaId().equals(aerolineaId))
+                .filter(vuelo -> fecha == null || tienePlazasDisponibles(vuelo.id(), fecha))
                 .sorted(Comparator.comparing(VueloDto::id))
                 .toList();
     }
@@ -255,6 +257,15 @@ public class FlightBookingController {
         List<T> copia = new ArrayList<>(lista);
         copia.sort(Comparator.comparing(keyExtractor));
         return copia;
+    }
+
+    private boolean tienePlazasDisponibles(String vueloId, LocalDate fecha) {
+        long ocupacion = reservas.values().stream()
+                .filter(r -> r.vueloId().equals(vueloId))
+                .filter(r -> r.fecha().equals(fecha))
+                .filter(r -> r.estado() == EstadoReservaVuelo.BOOKED)
+                .count();
+        return ocupacion < MAX_RESERVAS_POR_VUELO_Y_FECHA;
     }
 
     public record ReservaVueloRequestDto(String usuarioId, String aerolineaId, String ciudadOrigenId, String ciudadDestinoId, LocalDate fecha) {

@@ -1,3 +1,4 @@
+
 services:
   mock-hotel-booking-service:
     build:
@@ -26,3 +27,17 @@ services:
       - "8085:8085"
     depends_on:
       - mock-hotel-booking-service
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-server
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    volumes:
+      - ollama-data:/root/.ollama
+    command: serve
+
+volumes:
+  ollama-data:

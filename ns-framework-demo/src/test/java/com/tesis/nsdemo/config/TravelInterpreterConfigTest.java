@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tesis.nsdemo.impl.TravelIntentInterpreter;
 import com.tesis.nsdemo.travel.TravelCatalogService;
 import com.tesis.nsframework.core.port.IntentInterpreter;
-import com.tesis.nsframework.llm.http.HttpLlmIntentInterpreter;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.context.ConfigurationPropertiesAutoConfiguration;
@@ -40,7 +39,8 @@ class TravelInterpreterConfigTest {
                 )
                 .run(context -> {
                     assertThat(context).hasSingleBean(IntentInterpreter.class);
-                    assertThat(context.getBean(IntentInterpreter.class)).isInstanceOf(HttpLlmIntentInterpreter.class);
+                    assertThat(context.getBean(IntentInterpreter.class).getClass().getName())
+                            .isEqualTo("com.tesis.nsframework.llm.http.HttpLlmIntentInterpreter");
                 });
     }
 
@@ -58,4 +58,5 @@ class TravelInterpreterConfigTest {
         }
     }
 }
+
 

@@ -30,17 +30,21 @@ public class TravelCatalogService {
     }
 
     public TravelCatalogSnapshot fetchSnapshot() {
+        return fetchSnapshot(null);
+    }
+
+    public TravelCatalogSnapshot fetchSnapshot(java.time.LocalDate travelDate) {
         List<CityDto> cities = tourismServiceClient.getCities().stream()
                 .sorted(Comparator.comparing(CityDto::id))
                 .toList();
         List<AttractionDto> attractions = tourismServiceClient.getAttractions().stream()
                 .sorted(Comparator.comparing(AttractionDto::id))
                 .toList();
-        List<FlightDto> flights = flightServiceClient.getFlights().stream()
+        List<FlightDto> flights = flightServiceClient.getFlights(travelDate).stream()
                 .sorted(Comparator.comparing(FlightDto::id))
                 .toList();
         List<HotelDto> hotels = cities.stream()
-                .flatMap(city -> hotelServiceClient.getHotels(city.id()).stream())
+                .flatMap(city -> hotelServiceClient.getHotels(city.id(), travelDate).stream())
                 .sorted(Comparator.comparing(HotelDto::id))
                 .toList();
 
@@ -52,4 +56,3 @@ public class TravelCatalogService {
         return new TravelCatalogSnapshot(cities, attractions, flights, hotels, hotelsByCity, attractionsByCity);
     }
 }
-

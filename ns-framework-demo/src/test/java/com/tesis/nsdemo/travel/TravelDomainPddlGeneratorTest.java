@@ -17,7 +17,7 @@ class TravelDomainPddlGeneratorTest {
     void shouldGenerateDynamicDomainWithCatalogConstants() {
         TravelCatalogService catalogService = new TravelCatalogService(null, null, null) {
             @Override
-            public TravelCatalogSnapshot fetchSnapshot() {
+            public TravelCatalogSnapshot fetchSnapshot(java.time.LocalDate travelDate) {
                 return new TravelCatalogSnapshot(
                         List.of(new CityDto("MADR", "Madrid", "ESPA"), new CityDto("PARI", "Paris", "FRAN")),
                         List.of(new AttractionDto("AT017", "PARI", "Torre Eiffel", "Monumento")),
@@ -35,7 +35,8 @@ class TravelDomainPddlGeneratorTest {
         assertTrue(domain.contains("MADR PARI - city"));
         assertTrue(domain.contains("HT018 HT016 - hotel") || domain.contains("HT016 HT018 - hotel"));
         assertTrue(domain.contains("AT017 - attraction"));
-        assertTrue(domain.contains("(:action book-flight-madr-pari"));
+        assertTrue(domain.contains("(:action book-flight"));
+        assertTrue(domain.contains(":parameters (?t - traveler ?from - city ?to - city)"));
         assertTrue(domain.contains("(:action book-hotel"));
         assertTrue(domain.contains("(:action visit-attraction"));
     }

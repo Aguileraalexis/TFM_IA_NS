@@ -14,7 +14,6 @@
 
     <modules>
         <module>ns-framework</module>
-        <module>ns-framework-demo</module>
         <module>ns-mock-services</module>
     </modules>
 
@@ -26,4 +25,3 @@
     </properties>
 
 </project>
-

@@ -9,6 +9,7 @@ import com.tesis.nsframework.core.port.*;
 import com.tesis.nsframework.core.service.DefaultGoalMapper;
 import com.tesis.nsframework.core.service.DefaultStateUpdater;
 import com.tesis.nsframework.core.service.InMemoryStateStore;
+import com.tesis.nsframework.planner.docker.DockerPlanner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -47,14 +48,17 @@ public class DemoBeansConfig {
 
     @Bean
     public PlannerOptions plannerOptions(TravelDemoProperties properties) {
-        return PlannerOptions.defaults();
+        TravelDemoProperties.PlannerProperties plannerProps = properties.getPlanner();
+        return new PlannerOptions(Duration.ofSeconds(plannerProps.getTimeoutSeconds()), "astar(lmcut())");
     }
 
     @Bean
     public Planner planner(TravelDemoProperties properties) {
-        // DockerPlanner will be returned via the ExecutionOrchestrator bean wiring
-        // Components (TravelIntentInterpreter, TravelFeignActionExecutor) handle Feign autowiring
-        return new TravelDemoPlanner();
+        TravelDemoProperties.PlannerProperties plannerProps = properties.getPlanner();
+        return new DockerPlanner(
+                plannerProps.getDockerImage(),
+                plannerProps.getContainerCommand()
+        );
     }
 
     @Bean

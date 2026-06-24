@@ -19,24 +19,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Executes travel actions using OpenFeign clients against mock services.
+ * Ejecuta acciones de viaje usando clientes OpenFeign contra servicios mock.
  *
- * <p>This executor reads parameters from two sources:
+ * <p>Este ejecutor lee parametros desde dos fuentes:
  * <ul>
- *   <li>{@link ExecutionContext} – traveler ID, travel date, and the route→airline mapping
- *       injected by {@code TravelExecutionOrchestrator} from {@code PlanningProblem.metadata()}.</li>
- *   <li>{@link PlannedAction#arguments()} – city/hotel/attraction IDs as parsed from the PDDL
- *       plan text.  Values are uppercased because {@code PlanTextParser} lowercases everything.</li>
+ *   <li>{@link ExecutionContext}: id de viajero, fecha de viaje y mapeo ruta->aerolinea
+ *       inyectado por {@code TravelExecutionOrchestrator} desde {@code PlanningProblem.metadata()}.</li>
+ *   <li>{@link PlannedAction#arguments()}: IDs de ciudad/hotel/atractivo parseados del texto
+ *       del plan PDDL. Los valores se convierten a mayusculas porque {@code PlanTextParser}
+ *       transforma todo a minusculas.</li>
  * </ul>
  *
- * <p>Flight actions follow the naming convention {@code book-flight-{origin}-{destination}}
- * (e.g. {@code book-flight-madr-pari}).  Origin and destination are derived by uppercasing
- * the 4-char city codes embedded in the action name.
+ * <p>Las acciones de vuelo usan la convencion parametrizada {@code (book-flight traveler from to)}.
+ * El origen y el destino se obtienen de {@link PlannedAction#arguments()} y se elevan a mayusculas
+ * porque {@code PlanTextParser} transforma todo a minusculas.
  */
 @Component
 public class TravelFeignActionExecutor implements ActionExecutor {
 
-    private static final String BOOK_FLIGHT_PREFIX = "book-flight-";
+    private static final String BOOK_FLIGHT_ACTION = "book-flight";
 
     private final FlightServiceClient flightServiceClient;
     private final HotelServiceClient hotelServiceClient;
@@ -49,32 +50,29 @@ public class TravelFeignActionExecutor implements ActionExecutor {
 
     @Override
     public ActionOutcome execute(PlannedAction action, ExecutionContext context) {
-        if (action.name().startsWith(BOOK_FLIGHT_PREFIX)) {
+        if (BOOK_FLIGHT_ACTION.equals(action.name())) {
             return executeFlightReservation(action, context);
         }
         return switch (action.name()) {
             case "book-hotel"        -> executeHotelReservation(action, context);
             case "visit-attraction"  -> executeAttractionVisit(action);
             default -> ActionOutcome.failure(400,
-                    "Unsupported travel action: " + action.name(),
+                    "Accion de viaje no soportada: " + action.name(),
                     Map.of("action", action.name()));
         };
     }
 
     // -------------------------------------------------------------------------
-    // Flight
+    // Vuelo
     // -------------------------------------------------------------------------
 
     private ActionOutcome executeFlightReservation(PlannedAction action, ExecutionContext context) {
-        // Action name pattern: book-flight-{originLower}-{destLower}
-        // City IDs are 4-char uppercase codes → safe to just uppercase the tokens.
-        String rest = action.name().substring(BOOK_FLIGHT_PREFIX.length()); // "madr-pari"
-        String[] parts = rest.split("-", 2);
-        if (parts.length != 2) {
-            throw new FrameworkException("Cannot parse city codes from flight action name: " + action.name());
+        List<String> args = action.arguments();
+        if (args.size() < 3) {
+            throw new FrameworkException("book-flight requires 3 arguments (traveler, origin, destination), got: " + args);
         }
-        String originCityId = parts[0].toUpperCase();
-        String destCityId   = parts[1].toUpperCase();
+        String originCityId = args.get(1).toUpperCase();
+        String destCityId   = args.get(2).toUpperCase();
 
         String userId     = requiredCtx(context, "travelerId");
         String travelDate = requiredCtx(context, "travelDate");
@@ -94,7 +92,7 @@ public class TravelFeignActionExecutor implements ActionExecutor {
         effects.put("(at " + travelerSymbol + " " + destCityId   + ")", "true");
         effects.put("(visited-city " + destCityId + ")", "true");
         effects.put("(flight-booked " + travelerSymbol + " " + originCityId + " " + destCityId + ")", "true");
-        return ActionOutcome.success(201, "Flight booked successfully", payload, effects);
+        return ActionOutcome.success(201, "Vuelo reservado correctamente", payload, effects);
     }
 
     // -------------------------------------------------------------------------
@@ -102,7 +100,7 @@ public class TravelFeignActionExecutor implements ActionExecutor {
     // -------------------------------------------------------------------------
 
     private ActionOutcome executeHotelReservation(PlannedAction action, ExecutionContext context) {
-        // Plan line: (book-hotel traveler_1 ht016 pari) → arguments lowercased by PlanTextParser
+        // Linea de plan: (book-hotel traveler_1 ht016 pari) -> argumentos en minusculas por PlanTextParser
         List<String> args = action.arguments();
         if (args.size() < 3) {
             throw new FrameworkException("book-hotel requires 3 arguments (traveler, hotel, city), got: " + args);
@@ -124,33 +122,33 @@ public class TravelFeignActionExecutor implements ActionExecutor {
 
         Map<String, String> effects = new LinkedHashMap<>();
         effects.put("(hotel-booked " + travelerSymbol + " " + hotelId + " " + cityId + ")", "true");
-        return ActionOutcome.success(201, "Hotel booked successfully", payload, effects);
+        return ActionOutcome.success(201, "Hotel reservado correctamente", payload, effects);
     }
 
     // -------------------------------------------------------------------------
-    // Attraction
+    // Atractivo
     // -------------------------------------------------------------------------
 
     private ActionOutcome executeAttractionVisit(PlannedAction action) {
-        // Plan line: (visit-attraction traveler_1 at017 pari)
+        // Linea de plan: (visit-attraction traveler_1 at017 pari)
         List<String> args = action.arguments();
         if (args.size() < 2) {
             throw new FrameworkException("visit-attraction requires at least 2 arguments, got: " + args);
         }
         String attractionId = args.get(1).toUpperCase();
         Map<String, String> effects = Map.of("(visited-attraction " + attractionId + ")", "true");
-        return ActionOutcome.success(200, "Attraction marked as visited",
+        return ActionOutcome.success(200, "Atractivo marcado como visitado",
                 Map.of("attractionId", attractionId), effects);
     }
 
     // -------------------------------------------------------------------------
-    // Helpers
+    // Utilidades
     // -------------------------------------------------------------------------
 
     private String requiredCtx(ExecutionContext context, String key) {
         String value = context.getAsString(key);
         if (value == null) {
-            throw new FrameworkException("Missing context value '" + key + "' required for travel action execution");
+            throw new FrameworkException("Falta el valor de contexto '" + key + "' requerido para ejecutar la accion de viaje");
         }
         return value;
     }

@@ -8,7 +8,6 @@ import com.tesis.nsframework.core.exception.FrameworkException;
 import com.tesis.nsframework.core.model.DomainMetadata;
 import com.tesis.nsframework.core.model.InterpretationResult;
 import com.tesis.nsframework.core.port.IntentInterpreter;
-import org.springframework.stereotype.Component;
 
 import java.text.Normalizer;
 import java.time.LocalDate;
@@ -21,9 +20,10 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Component
 public class TravelIntentInterpreter implements IntentInterpreter {
     private static final Pattern DATE_PATTERN = Pattern.compile("\\b(\\d{4}-\\d{2}-\\d{2})\\b");
+    private static final Pattern ORIGIN_HINT_PATTERN = Pattern.compile(
+            "\\b(?:desde|from|origen)\\b\\s+(.+?)(?=\\s+\\b(?:para|a|hasta|con|y|e|el|la|los|las|visit|visitar|visita)\\b|$)");
 
     private final TravelCatalogService travelCatalogService;
     private final TravelDemoProperties properties;
@@ -44,8 +44,8 @@ public class TravelIntentInterpreter implements IntentInterpreter {
         List<Match> cityMatches = findCityMatches(normalizedInput, snapshot);
         List<Match> attractionMatches = findAttractionMatches(normalizedInput, snapshot);
 
-        String originCityId = resolveOriginCityId(normalizedInput, cityMatches)
-                .orElseGet(() -> cityMatches.isEmpty() ? null : cityMatches.getFirst().id());
+        String originCityId = resolveOriginCityId(normalizedInput, cityMatches, snapshot)
+                .orElse(null);
         if (originCityId == null) {
             throw new FrameworkException("No se pudo inferir la ciudad de origen desde el prompt");
         }
@@ -69,7 +69,7 @@ public class TravelIntentInterpreter implements IntentInterpreter {
             throw new FrameworkException("No se pudieron inferir ciudades o atractivos destino desde el prompt");
         }
 
-        LocalDate travelDate = extractTravelDate(normalizedInput)
+        LocalDate travelDate = extractTravelDate(userInput)
                 .orElse(LocalDate.now().plusDays(properties.getDefaultTravelDateOffsetDays()));
         String travelerId = properties.getDefaultTravelerId();
 
@@ -84,12 +84,46 @@ public class TravelIntentInterpreter implements IntentInterpreter {
         return new InterpretationResult("plan_trip", entities, Map.of(), 0.92, userInput);
     }
 
-    private Optional<String> resolveOriginCityId(String normalizedInput, List<Match> cityMatches) {
+    private Optional<String> resolveOriginCityId(String normalizedInput, List<Match> cityMatches, TravelCatalogSnapshot snapshot) {
         for (Match cityMatch : cityMatches) {
             if (normalizedInput.contains("desde " + cityMatch.normalizedName())
                     || normalizedInput.contains("from " + cityMatch.normalizedName())
                     || normalizedInput.contains("origen " + cityMatch.normalizedName())) {
                 return Optional.of(cityMatch.id());
+            }
+        }
+
+        Optional<String> originHint = extractOriginHint(normalizedInput);
+        if (originHint.isPresent()) {
+            Optional<String> originFromHint = findCityMatchByText(originHint.get(), snapshot);
+            if (originFromHint.isPresent()) {
+                return originFromHint;
+            }
+        }
+
+        if (!cityMatches.isEmpty()) {
+            return Optional.of(cityMatches.getFirst().id());
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<String> extractOriginHint(String normalizedInput) {
+        Matcher matcher = ORIGIN_HINT_PATTERN.matcher(normalizedInput);
+        if (matcher.find()) {
+            return Optional.ofNullable(matcher.group(1))
+                    .map(String::trim)
+                    .filter(value -> !value.isBlank());
+        }
+        return Optional.empty();
+    }
+
+    private Optional<String> findCityMatchByText(String candidateText, TravelCatalogSnapshot snapshot) {
+        String normalizedCandidate = normalize(candidateText);
+        for (var city : snapshot.cities()) {
+            String normalizedName = normalize(city.nombre());
+            if (normalizedCandidate.contains(normalizedName) || normalizedName.contains(normalizedCandidate)) {
+                return Optional.of(city.id());
             }
         }
         return Optional.empty();
@@ -129,8 +163,8 @@ public class TravelIntentInterpreter implements IntentInterpreter {
         return List.copyOf(ordered.values());
     }
 
-    private Optional<LocalDate> extractTravelDate(String normalizedInput) {
-        Matcher matcher = DATE_PATTERN.matcher(normalizedInput);
+    private Optional<LocalDate> extractTravelDate(String input) {
+        Matcher matcher = DATE_PATTERN.matcher(input);
         if (matcher.find()) {
             return Optional.of(LocalDate.parse(matcher.group(1)));
         }
@@ -149,4 +183,3 @@ public class TravelIntentInterpreter implements IntentInterpreter {
     private record Match(String id, String cityId, String normalizedName, int position) {
     }
 }
-

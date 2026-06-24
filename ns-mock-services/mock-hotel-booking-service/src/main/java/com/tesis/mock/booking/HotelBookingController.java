@@ -64,12 +64,15 @@ public class HotelBookingController {
 
     @Operation(summary = "Listar hoteles", description = "Devuelve todos los hoteles, opcionalmente filtrados por ciudad")
     @GetMapping("/hoteles")
-    public List<HotelDto> obtenerHoteles(@Parameter(description = "ID de la ciudad para filtrar") @RequestParam(name = "ciudadId", required = false) String ciudadId) {
+    public List<HotelDto> obtenerHoteles(
+            @Parameter(description = "ID de la ciudad para filtrar") @RequestParam(name = "ciudadId", required = false) String ciudadId,
+            @Parameter(description = "Fecha para verificar disponibilidad de habitaciones") @RequestParam(name = "fecha", required = false) LocalDate fecha) {
         if (ciudadId != null && !ciudades.containsKey(ciudadId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciudad no encontrada");
         }
         return hoteles.values().stream()
                 .filter(hotel -> ciudadId == null || hotel.ciudadId().equals(ciudadId))
+                .filter(hotel -> fecha == null || tieneHabitacionDisponible(hotel.id(), fecha))
                 .sorted(Comparator.comparing(HotelDto::id))
                 .toList();
     }
@@ -155,6 +158,12 @@ public class HotelBookingController {
                 .filter(reserva -> reserva.habitacionId().equals(habitacionId))
                 .filter(reserva -> reserva.fecha().equals(fecha))
                 .anyMatch(reserva -> reserva.estado() == EstadoReserva.BOOKED);
+    }
+
+    private boolean tieneHabitacionDisponible(String hotelId, LocalDate fecha) {
+        return habitaciones.values().stream()
+                .filter(habitacion -> habitacion.hotelId().equals(hotelId))
+                .anyMatch(habitacion -> !estaReservada(habitacion.id(), fecha));
     }
 
     private void cargarCiudades() {
