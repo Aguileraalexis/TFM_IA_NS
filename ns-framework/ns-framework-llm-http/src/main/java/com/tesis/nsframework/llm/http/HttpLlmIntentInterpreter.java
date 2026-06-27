@@ -3,6 +3,7 @@ package com.tesis.nsframework.llm.http;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tesis.nsframework.core.exception.ExternalServiceException;
 import com.tesis.nsframework.core.exception.FrameworkException;
 import com.tesis.nsframework.core.model.DomainMetadata;
 import com.tesis.nsframework.core.model.InterpretationResult;
@@ -37,6 +38,8 @@ public class HttpLlmIntentInterpreter implements IntentInterpreter {
     private static final String CATALOG_BASE_URL_OPTION = "catalog-base-url";
     private static final String CATALOG_CITIES_PATH_OPTION = "catalog-cities-path";
     private static final String CATALOG_ATTRACTIONS_PATH_OPTION = "catalog-attractions-path";
+    private static final String LLM_SERVICE_NAME = "servicio LLM/Ollama";
+    private static final String PROMPT_CATALOG_SERVICE_NAME = "servicio de catalogo para el prompt del LLM";
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -85,25 +88,36 @@ public class HttpLlmIntentInterpreter implements IntentInterpreter {
 
             HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new FrameworkException("LLM call failed with status " + response.statusCode());
+                throw classifyHttpStatus(LLM_SERVICE_NAME,
+                        response.statusCode(),
+                        "La llamada al servicio LLM/Ollama devolvio status " + response.statusCode() + " en " + endpoint,
+                        null);
             }
 
             LOGGER.debug("RESPUESTA_HTTP_LLM: {}", response.body());
 
             return parseInterpretation(response.body());
+        } catch (ExternalServiceException ex) {
+            throw ex;
         } catch (HttpTimeoutException ex) {
             LOGGER.error("Tiempo de espera agotado en la solicitud al LLM. endpoint={}, timeoutSeconds={}", endpoint, timeout.toSeconds(), ex);
-            throw new FrameworkException("La solicitud al LLM excedio el tiempo de espera de " + timeout + " al invocar " + endpoint, ex);
+            throw ExternalServiceException.timeout(LLM_SERVICE_NAME,
+                    "La solicitud al servicio LLM/Ollama excedio el tiempo de espera de " + timeout + " al invocar " + endpoint,
+                    ex);
         } catch (ConnectException ex) {
             LOGGER.error("No se pudo conectar al endpoint LLM. endpoint={}", endpoint, ex);
-            throw new FrameworkException("No se pudo conectar a " + endpoint, ex);
+            throw ExternalServiceException.unavailable(LLM_SERVICE_NAME,
+                    "No se pudo conectar al servicio LLM/Ollama en " + endpoint,
+                    ex);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             LOGGER.error("Error al interpretar la intencion", ex);
             throw new FrameworkException("No se pudo interpretar la entrada del usuario", ex);
         } catch (IOException ex) {
             LOGGER.error("Error al interpretar la intencion", ex);
-            throw new FrameworkException("No se pudo interpretar la entrada del usuario", ex);
+            throw ExternalServiceException.badGateway(LLM_SERVICE_NAME,
+                    "El servicio LLM/Ollama devolvio una respuesta invalida o no pudo procesarse",
+                    ex);
         }
     }
 
@@ -142,17 +156,41 @@ public class HttpLlmIntentInterpreter implements IntentInterpreter {
                 .GET()
                 .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new FrameworkException("Catalog request failed with status " + response.statusCode() + " for " + url);
-        }
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw classifyHttpStatus(PROMPT_CATALOG_SERVICE_NAME,
+                        response.statusCode(),
+                        "La consulta al catalogo del prompt devolvio status " + response.statusCode() + " para " + url,
+                        null);
+            }
 
-        JsonNode root = objectMapper.readTree(response.body());
-        if (!root.isArray()) {
-            throw new FrameworkException("Catalog response must be a JSON array for " + url);
-        }
+            JsonNode root = objectMapper.readTree(response.body());
+            if (!root.isArray()) {
+                throw ExternalServiceException.badGateway(PROMPT_CATALOG_SERVICE_NAME,
+                        "La respuesta del catalogo del prompt debe ser un arreglo JSON en " + url,
+                        null);
+            }
 
-        return root;
+            return root;
+        } catch (ExternalServiceException ex) {
+            throw ex;
+        } catch (HttpTimeoutException ex) {
+            throw ExternalServiceException.timeout(PROMPT_CATALOG_SERVICE_NAME,
+                    "La consulta al catalogo del prompt excedio el tiempo de espera para " + url,
+                    ex);
+        } catch (ConnectException ex) {
+            throw ExternalServiceException.unavailable(PROMPT_CATALOG_SERVICE_NAME,
+                    "No se pudo conectar al catalogo del prompt en " + url,
+                    ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw ex;
+        } catch (IOException ex) {
+            throw ExternalServiceException.badGateway(PROMPT_CATALOG_SERVICE_NAME,
+                    "No se pudo procesar la respuesta del catalogo del prompt en " + url,
+                    ex);
+        }
     }
 
     private String formatCatalogListing(JsonNode root, String labelField, String idField) {
@@ -243,6 +281,16 @@ public class HttpLlmIntentInterpreter implements IntentInterpreter {
             return defaultValue;
         }
         return value.trim();
+    }
+
+    private ExternalServiceException classifyHttpStatus(String serviceName, int statusCode, String message, Throwable cause) {
+        if (statusCode == 408 || statusCode == 504) {
+            return ExternalServiceException.timeout(serviceName, message, cause);
+        }
+        if (statusCode >= 500) {
+            return ExternalServiceException.unavailable(serviceName, message, cause);
+        }
+        return ExternalServiceException.badGateway(serviceName, message, cause);
     }
 
     private InterpretationResult parseInterpretation(String rawBody) throws IOException {

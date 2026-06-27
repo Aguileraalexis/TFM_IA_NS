@@ -128,6 +128,9 @@ public class DockerPlanner implements Planner {
             }
 
             String rawPlan = Files.exists(outputFile) ? Files.readString(outputFile, StandardCharsets.UTF_8) : "";
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Plan devuelto por el planner:\n{}", abbreviate(rawPlan));
+            }
             return PlanResult.success(planTextParser.parse(rawPlan), rawPlan);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();

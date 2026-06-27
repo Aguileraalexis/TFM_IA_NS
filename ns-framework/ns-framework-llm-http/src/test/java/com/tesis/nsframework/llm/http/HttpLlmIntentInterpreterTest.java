@@ -3,6 +3,7 @@ package com.tesis.nsframework.llm.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import com.tesis.nsframework.core.exception.ExternalServiceException;
 import com.tesis.nsframework.core.exception.FrameworkException;
 import com.tesis.nsframework.core.model.DomainMetadata;
 import com.tesis.nsframework.core.model.InterpretationResult;
@@ -121,7 +122,8 @@ class HttpLlmIntentInterpreterTest {
                 )
         );
 
-        assertTrue(exception.getMessage().contains("No se pudo conectar a " + unreachableEndpoint));
+        assertInstanceOf(ExternalServiceException.class, exception);
+        assertTrue(exception.getMessage().contains("No se pudo conectar al servicio LLM/Ollama en " + unreachableEndpoint));
         assertInstanceOf(java.net.ConnectException.class, exception.getCause());
     }
 

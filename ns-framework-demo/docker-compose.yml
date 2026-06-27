@@ -1,0 +1,89 @@
+services:
+  demo-app:
+    build:
+      context: ..
+      dockerfile: ns-framework-demo/Dockerfile
+    container_name: ns-framework-demo-app
+    ports:
+      - "8080:8080"
+    environment:
+      DEMO_TRAVEL_INTERPRETER_TYPE: ${DEMO_TRAVEL_INTERPRETER_TYPE:-rule-based}
+      DEMO_TRAVEL_LLM_ENDPOINT: ${DEMO_TRAVEL_LLM_ENDPOINT:-http://ollama:11434/api/generate}
+      DEMO_TRAVEL_LLM_API_KEY: ${DEMO_TRAVEL_LLM_API_KEY:-}
+      DEMO_TRAVEL_LLM_TIMEOUT: ${DEMO_TRAVEL_LLM_TIMEOUT:-180s}
+      DEMO_TRAVEL_LLM_MODEL: ${DEMO_TRAVEL_LLM_MODEL:-llama3.1:latest}
+      DEMO_TRAVEL_SERVICES_HOTEL_URL: http://mock-hotel-booking-service:8082
+      DEMO_TRAVEL_SERVICES_FLIGHT_URL: http://mock-flight-booking-service:8084
+      DEMO_TRAVEL_SERVICES_TOURISM_URL: http://mock-tourist-attractions-service:8085
+      DOCKER_HOST: tcp://docker-daemon:2375
+      JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/planner-tmp
+    volumes:
+      - planner-tmp:/planner-tmp
+    depends_on:
+      - mock-hotel-booking-service
+      - mock-flight-booking-service
+      - mock-tourist-attractions-service
+      - docker-daemon
+    restart: unless-stopped
+
+  docker-daemon:
+    image: docker:27-dind
+    container_name: ns-framework-demo-docker-daemon
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    command: ["--host=tcp://0.0.0.0:2375"]
+    volumes:
+      - docker-data:/var/lib/docker
+      - planner-tmp:/planner-tmp
+    restart: unless-stopped
+
+  mock-hotel-booking-service:
+    build:
+      context: ../ns-mock-services
+      dockerfile: mock-hotel-booking-service/Dockerfile
+    container_name: mock-hotel-booking-service
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+
+  mock-flight-booking-service:
+    build:
+      context: ../ns-mock-services
+      dockerfile: mock-flight-booking-service/Dockerfile
+    container_name: mock-flight-booking-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - mock-hotel-booking-service
+    restart: unless-stopped
+
+  mock-tourist-attractions-service:
+    build:
+      context: ../ns-mock-services
+      dockerfile: mock-tourist-attractions-service/Dockerfile
+    container_name: mock-tourist-attractions-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - mock-hotel-booking-service
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-server
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    volumes:
+      - ollama-data:/root/.ollama
+    command: serve
+    restart: unless-stopped
+
+volumes:
+  docker-data:
+  planner-tmp:
+  ollama-data:
+
