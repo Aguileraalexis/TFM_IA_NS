@@ -214,5 +214,11 @@
         "ciudadOrigenId":  "FRAK",
         "ciudadDestinoId":  "DUBA",
         "aerolineaId":  "AL01"
+    },
+    {
+        "id":  "V-C019-BA",
+        "ciudadOrigenId":  "PARI",
+        "ciudadDestinoId":  "MADR",
+        "aerolineaId":  "AL03"
     }
 ]

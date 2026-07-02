@@ -103,6 +103,11 @@ class HttpLlmIntentInterpreterTest {
 
     @Test
     void shouldReturnExplicitMessageWhenLlmEndpointIsUnreachable() throws Exception {
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/ciudades", exchange -> respond(exchange, "[{\"id\":\"MADR\",\"nombre\":\"Madrid\"}]"));
+        server.createContext("/atractivos", exchange -> respond(exchange, "[]"));
+        server.start();
+
         int closedPort = findClosedPort();
         URI unreachableEndpoint = URI.create("http://localhost:" + closedPort + "/interpret");
 
@@ -111,7 +116,11 @@ class HttpLlmIntentInterpreterTest {
                 unreachableEndpoint,
                 null,
                 Duration.ofSeconds(2),
-                Map.of()
+                Map.of(
+                        "catalog-base-url", "http://localhost:" + server.getAddress().getPort(),
+                        "catalog-cities-path", "/ciudades",
+                        "catalog-attractions-path", "/atractivos"
+                )
         );
 
         FrameworkException exception = assertThrows(

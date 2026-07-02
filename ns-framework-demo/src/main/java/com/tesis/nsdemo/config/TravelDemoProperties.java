@@ -113,10 +113,22 @@ public class TravelDemoProperties {
     }
 
     public static class PlannerProperties {
+        private String type = "docker";
         private String dockerImage = "aibasel/downward";
         private String containerCommand = "--plan-file /planner/plan.txt /planner/domain.pddl /planner/problem.pddl --search 'astar(lmcut())'";
         private boolean planWrittenToFile = true;
         private int timeoutSeconds = 120;
+
+        @NestedConfigurationProperty
+        private HttpLlmProperties httpLlm = new HttpLlmProperties();
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
 
         public String getDockerImage() {
             return dockerImage;
@@ -148,6 +160,14 @@ public class TravelDemoProperties {
 
         public void setTimeoutSeconds(int timeoutSeconds) {
             this.timeoutSeconds = timeoutSeconds;
+        }
+
+        public HttpLlmProperties getHttpLlm() {
+            return httpLlm;
+        }
+
+        public void setHttpLlm(HttpLlmProperties httpLlm) {
+            this.httpLlm = httpLlm;
         }
     }
 }

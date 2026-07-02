@@ -45,10 +45,19 @@ demo:
       tourism:
         url: http://localhost:8085
     planner:
+      type: ${DEMO_TRAVEL_PLANNER_TYPE:docker}
       docker-image: "aibasel/downward"
       container-command: "--plan-file /planner/plan.txt /planner/domain.pddl /planner/problem.pddl --search 'astar(lmcut())'"
       plan-written-to-file: true
       timeout-seconds: 120
+      http-llm:
+        endpoint: ${DEMO_TRAVEL_PLANNER_LLM_ENDPOINT:}
+        api-key: ${DEMO_TRAVEL_PLANNER_LLM_API_KEY:}
+        timeout: ${DEMO_TRAVEL_PLANNER_LLM_TIMEOUT:60s}
+        request:
+          model: ${DEMO_TRAVEL_PLANNER_LLM_MODEL:}
+          stream: false
+          temperature: 0
 
 logging:
   level:

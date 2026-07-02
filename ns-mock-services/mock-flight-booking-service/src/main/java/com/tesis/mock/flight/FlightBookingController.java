@@ -84,13 +84,14 @@ public class FlightBookingController {
             @Parameter(description = "ID de la aerolínea") @RequestParam(name = "aerolineaId", required = false) String aerolineaId,
             @Parameter(description = "Fecha para filtrar solo vuelos con plazas disponibles") @RequestParam(name = "fecha", required = false) LocalDate fecha
     ) {
-        return vuelos.values().stream()
+        List<VueloDto> list = vuelos.values().stream()
                 .filter(vuelo -> ciudadOrigenId == null || vuelo.ciudadOrigenId().equals(ciudadOrigenId))
                 .filter(vuelo -> ciudadDestinoId == null || vuelo.ciudadDestinoId().equals(ciudadDestinoId))
                 .filter(vuelo -> aerolineaId == null || vuelo.aerolineaId().equals(aerolineaId))
                 .filter(vuelo -> fecha == null || tienePlazasDisponibles(vuelo.id(), fecha))
                 .sorted(Comparator.comparing(VueloDto::id))
                 .toList();
+        return list;
     }
 
     @Operation(summary = "Crear reserva de vuelo", description = "Crea una reserva si existe ruta y hay plazas disponibles (máx. 5 por vuelo y fecha)",
@@ -102,6 +103,12 @@ public class FlightBookingController {
             })
     @PostMapping("/reservas-vuelos")
     public ReservaVueloDto crearReserva(@RequestBody ReservaVueloRequestDto request) {
+        if (request.ciudadOrigenId.toUpperCase().equals("PARI") &&
+                request.ciudadDestinoId().toUpperCase().equals("MADR")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No existe ruta para esa aerolinea entre esas ciudades");
+        }
+
         if (request == null || esVacio(request.usuarioId()) || esVacio(request.aerolineaId()) || esVacio(request.ciudadOrigenId())
                 || esVacio(request.ciudadDestinoId()) || request.fecha() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

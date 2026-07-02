@@ -38,7 +38,11 @@ public class ExecutionController {
                     @ApiResponse(responseCode = "200", description = "Plan ejecutado con éxito",
                             content = @Content(mediaType = "application/json",
                                     schema = @Schema(implementation = ExecutionResult.class))),
-                    @ApiResponse(responseCode = "400", description = "Petición inválida")
+                    @ApiResponse(responseCode = "400", description = "Petición inválida"),
+                    @ApiResponse(responseCode = "422", description = "No se pudo interpretar o procesar la solicitud"),
+                    @ApiResponse(responseCode = "502", description = "Un servicio externo devolvió una respuesta inválida"),
+                    @ApiResponse(responseCode = "503", description = "Un servicio externo no está disponible"),
+                    @ApiResponse(responseCode = "504", description = "Un servicio externo excedió el tiempo de espera")
             }
     )
     @PostMapping("/execute")

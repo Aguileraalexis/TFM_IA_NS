@@ -7,13 +7,18 @@ import com.tesis.nsdemo.client.dto.HotelReservationDto;
 import com.tesis.nsframework.core.model.ActionOutcome;
 import com.tesis.nsframework.core.model.ExecutionContext;
 import com.tesis.nsframework.core.model.PlannedAction;
+import feign.FeignException;
+import feign.Request;
+import feign.Response;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TravelFeignActionExecutorTest {
@@ -80,6 +85,100 @@ class TravelFeignActionExecutorTest {
         assertTrue(outcome.success());
         assertEquals("AT017", outcome.payload().get("attractionId"));
         assertTrue(outcome.observedEffects().containsKey("(visited-attraction AT017)"));
+    }
+
+    @Test
+    void shouldReturnFailureOutcomeWhenFlightReservationConflicts() {
+        FlightServiceClient conflictFlightClient = new FlightServiceClient() {
+            @Override
+            public List<com.tesis.nsdemo.client.dto.CityDto> getCities() { return List.of(); }
+
+            @Override
+            public List<com.tesis.nsdemo.client.dto.FlightDto> getFlights(LocalDate fecha) { return List.of(); }
+
+            @Override
+            public FlightReservationDto createReservation(com.tesis.nsdemo.client.dto.FlightReservationRequest request) {
+                throw conflictFeign(409, "Vuelo sin disponibilidad");
+            }
+        };
+
+        TravelFeignActionExecutor conflictExecutor = new TravelFeignActionExecutor(conflictFlightClient, hotelClient);
+        PlannedAction action = new PlannedAction("book-flight", List.of("traveler_1", "madr", "pari"), Map.of());
+
+        ActionOutcome outcome = conflictExecutor.execute(action, baseContext());
+
+        assertFalse(outcome.success());
+        assertEquals(409, outcome.statusCode());
+        assertTrue(outcome.message().contains("Vuelo sin disponibilidad"));
+    }
+
+    @Test
+    void shouldReturnFailureOutcomeWhenHotelReservationConflicts() {
+        HotelServiceClient conflictHotelClient = new HotelServiceClient() {
+            @Override
+            public List<com.tesis.nsdemo.client.dto.CityDto> getCities() { return List.of(); }
+
+            @Override
+            public List<com.tesis.nsdemo.client.dto.HotelDto> getHotels(String ciudadId, LocalDate fecha) { return List.of(); }
+
+            @Override
+            public HotelReservationDto createReservation(com.tesis.nsdemo.client.dto.HotelReservationRequest req) {
+                throw conflictFeign(409, "Hotel sin disponibilidad");
+            }
+        };
+
+        TravelFeignActionExecutor conflictExecutor = new TravelFeignActionExecutor(flightClient, conflictHotelClient);
+        PlannedAction action = new PlannedAction("book-hotel", List.of("traveler_1", "ht016", "pari"), Map.of());
+
+        ActionOutcome outcome = conflictExecutor.execute(action, baseContext());
+
+        assertFalse(outcome.success());
+        assertEquals(409, outcome.statusCode());
+        assertTrue(outcome.message().contains("Hotel sin disponibilidad"));
+    }
+
+    @Test
+    void shouldReturnFailureOutcomeWhenFlightReservationServiceIsUnavailable() {
+        FlightServiceClient unavailableFlightClient = new FlightServiceClient() {
+            @Override
+            public List<com.tesis.nsdemo.client.dto.CityDto> getCities() { return List.of(); }
+
+            @Override
+            public List<com.tesis.nsdemo.client.dto.FlightDto> getFlights(LocalDate fecha) { return List.of(); }
+
+            @Override
+            public FlightReservationDto createReservation(com.tesis.nsdemo.client.dto.FlightReservationRequest request) {
+                throw new IllegalStateException("Connection refused");
+            }
+        };
+
+        TravelFeignActionExecutor unavailableExecutor = new TravelFeignActionExecutor(unavailableFlightClient, hotelClient);
+        PlannedAction action = new PlannedAction("book-flight", List.of("traveler_1", "madr", "pari"), Map.of());
+
+        ActionOutcome outcome = unavailableExecutor.execute(action, baseContext());
+
+        assertFalse(outcome.success());
+        assertEquals(503, outcome.statusCode());
+        assertTrue(outcome.message().contains("servicio externo no esta disponible"));
+    }
+
+    private FeignException conflictFeign(int status, String body) {
+        Request request = Request.create(
+                Request.HttpMethod.POST,
+                "http://mock-service/conflict",
+                Map.of(),
+                null,
+                null,
+                null
+        );
+        Response response = Response.builder()
+                .status(status)
+                .reason("Conflict")
+                .request(request)
+                .headers(Map.<String, Collection<String>>of())
+                .body(body, java.nio.charset.StandardCharsets.UTF_8)
+                .build();
+        return FeignException.errorStatus("POST http://mock-service/conflict", response);
     }
 }
 

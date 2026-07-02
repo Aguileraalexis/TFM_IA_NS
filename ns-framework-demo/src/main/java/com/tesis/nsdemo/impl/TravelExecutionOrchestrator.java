@@ -17,7 +17,6 @@ import com.tesis.nsframework.core.port.ExecutionOrchestrator;
 import com.tesis.nsframework.core.port.GoalMapper;
 import com.tesis.nsframework.core.port.IntentInterpreter;
 import com.tesis.nsframework.core.port.Planner;
-import com.tesis.nsframework.core.port.PlanningProblemBuilder;
 import com.tesis.nsframework.core.port.StateStore;
 import com.tesis.nsframework.core.port.StateUpdater;
 import com.tesis.nsframework.core.model.DomainMetadata;
@@ -26,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -34,7 +34,7 @@ public class TravelExecutionOrchestrator implements ExecutionOrchestrator {
 
     private final IntentInterpreter intentInterpreter;
     private final GoalMapper goalMapper;
-    private final PlanningProblemBuilder planningProblemBuilder;
+    private final TravelPlanningProblemBuilder planningProblemBuilder;
     private final Planner planner;
     private final ActionExecutor actionExecutor;
     private final StateUpdater stateUpdater;
@@ -45,7 +45,7 @@ public class TravelExecutionOrchestrator implements ExecutionOrchestrator {
 
     public TravelExecutionOrchestrator(IntentInterpreter intentInterpreter,
                                        GoalMapper goalMapper,
-                                       PlanningProblemBuilder planningProblemBuilder,
+                                       TravelPlanningProblemBuilder planningProblemBuilder,
                                        Planner planner,
                                        ActionExecutor actionExecutor,
                                        StateUpdater stateUpdater,
@@ -86,36 +86,56 @@ public class TravelExecutionOrchestrator implements ExecutionOrchestrator {
         GoalSpec goalSpec = goalMapper.map(interpretation, domainMetadata);
         SymbolicState state = new SymbolicState();
         stateStore.save(state);
-        ExecutionContext executionContext = new ExecutionContext(interpretation.entities());
-        interpretation.constraints().forEach(executionContext::put);
-        List<String> executedActions = new ArrayList<>();
+        List<ExecutionResult.ExecutedAction> executedActions = new ArrayList<>();
+        int replans = 0;
+        TravelPlanningBlacklist blacklist = new TravelPlanningBlacklist();
 
         java.time.LocalDate travelDate = extractTravelDate(interpretation);
-        String domainPddl = domainPddlGenerator.generate(travelDate);
-        PlanningProblem problem = planningProblemBuilder.build(state, goalSpec);
-        // Enriquecer el contexto de ejecucion con metadatos de planificacion (rutas, hoteles, fechas)
-        // para que el ejecutor de acciones resuelva parametros sin depender de metadatos por accion
-        // (DockerPlanner no los completa: solo parsea nombre y argumentos de la accion).
-        problem.metadata().forEach(executionContext::put);
-        PlanResult planResult = planner.plan(domainPddl, problem, plannerOptions);
-        if (!planResult.success() || planResult.actions().isEmpty()) {
-            log.warn("No se encontro un plan de viaje valido: {}", planResult.message());
-            return ExecutionResult.failure(planResult.message(), executedActions, 0, state);
-        }
+        while (true) {
+            ExecutionContext executionContext = buildExecutionContext(interpretation);
+            String domainPddl = domainPddlGenerator.generate(travelDate);
+            PlanningProblem problem = planningProblemBuilder.build(state, goalSpec, blacklist);
+            // Enriquecer el contexto de ejecucion con metadatos de planificacion (rutas, hoteles, fechas)
+            // para que el ejecutor de acciones resuelva parametros sin depender de metadatos por accion
+            // (DockerPlanner no los completa: solo parsea nombre y argumentos de la accion).
+            problem.metadata().forEach(executionContext::put);
+            PlanResult planResult = planner.plan(domainPddl, problem, plannerOptions);
+            if (!planResult.success() || planResult.actions().isEmpty()) {
+                log.warn("No se encontro un plan de viaje valido: {}", planResult.message());
+                return ExecutionResult.failure(planResult.message(), executedActions, replans, state);
+            }
 
-        for (PlannedAction plannedAction : planResult.actions()) {
-            log.info("Ejecutando accion de viaje {}", plannedAction.asInvocation());
-            ActionOutcome outcome = actionExecutor.execute(plannedAction, executionContext);
-            executedActions.add(plannedAction.asInvocation());
-            state = stateUpdater.update(state, plannedAction, outcome);
-            stateStore.save(state);
+            boolean replanNeeded = false;
+            for (PlannedAction plannedAction : planResult.actions()) {
+                log.info("Ejecutando accion de viaje {}", plannedAction.asInvocation());
+                ActionOutcome outcome = actionExecutor.execute(plannedAction, executionContext);
+                executedActions.add(new ExecutionResult.ExecutedAction(plannedAction.asInvocation(), outcome.success()));
+                state = stateUpdater.update(state, plannedAction, outcome);
+                stateStore.save(state);
 
-            if (!outcome.success()) {
-                return ExecutionResult.failure(outcome.message(), executedActions, 0, state);
+                if (!outcome.success()) {
+                    if (shouldBlacklistForReplan(outcome.statusCode(), plannedAction)) {
+                        rememberFailedElement(blacklist, plannedAction);
+                        log.warn("La accion {} devolvio conflicto 409; se relanza la planificacion con catalogo actualizado",
+                                plannedAction.asInvocation());
+                        replans++;
+                        replanNeeded = true;
+                        break;
+                    }
+                    return ExecutionResult.failure(outcome.message(), executedActions, replans, state);
+                }
+            }
+
+            if (!replanNeeded) {
+                return ExecutionResult.success("Viaje completado exitosamente", executedActions, replans, state);
             }
         }
+    }
 
-        return ExecutionResult.success("Viaje completado exitosamente", executedActions, 0, state);
+    private ExecutionContext buildExecutionContext(InterpretationResult interpretation) {
+        ExecutionContext executionContext = new ExecutionContext(interpretation.entities());
+        interpretation.constraints().forEach(executionContext::put);
+        return executionContext;
     }
 
     private String validateInterpretation(InterpretationResult interpretation) {
@@ -186,5 +206,20 @@ public class TravelExecutionOrchestrator implements ExecutionOrchestrator {
             return date;
         }
         return null;
+    }
+
+    private boolean shouldBlacklistForReplan(int statusCode, PlannedAction action) {
+        return statusCode == 409 && ("book-flight".equals(action.name()) || "book-hotel".equals(action.name()));
+    }
+
+    private void rememberFailedElement(TravelPlanningBlacklist blacklist, PlannedAction action) {
+        List<String> arguments = action.arguments();
+        if ("book-flight".equals(action.name()) && arguments.size() >= 3) {
+            blacklist.blacklistFlightRoute(arguments.get(1), arguments.get(2));
+            return;
+        }
+        if ("book-hotel".equals(action.name()) && arguments.size() >= 2) {
+            blacklist.blacklistHotel(arguments.get(1).toUpperCase(Locale.ROOT));
+        }
     }
 }

@@ -56,7 +56,7 @@ public class DefaultExecutionOrchestrator implements ExecutionOrchestrator {
         SymbolicState state = stateStore.loadCurrentState();
         ExecutionContext executionContext = new ExecutionContext(interpretation.entities());
         interpretation.constraints().forEach(executionContext::put);
-        List<String> executedActions = new ArrayList<>();
+        List<ExecutionResult.ExecutedAction> executedActions = new ArrayList<>();
         int replans = 0;
 
         while (true) {
@@ -72,7 +72,7 @@ public class DefaultExecutionOrchestrator implements ExecutionOrchestrator {
             for (PlannedAction plannedAction : planResult.actions()) {
                 LOGGER.info("Ejecutando accion {}", plannedAction.asInvocation());
                 ActionOutcome outcome = actionExecutor.execute(plannedAction, executionContext);
-                executedActions.add(plannedAction.asInvocation());
+                executedActions.add(new ExecutionResult.ExecutedAction(plannedAction.asInvocation(), outcome.success()));
                 state = stateUpdater.update(state, plannedAction, outcome);
                 stateStore.save(state);
 

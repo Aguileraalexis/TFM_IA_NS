@@ -11,8 +11,11 @@ import com.tesis.nsframework.core.model.ActionOutcome;
 import com.tesis.nsframework.core.model.ExecutionContext;
 import com.tesis.nsframework.core.model.PlannedAction;
 import com.tesis.nsframework.core.port.ActionExecutor;
+import feign.FeignException;
+import feign.RetryableException;
 import org.springframework.stereotype.Component;
 
+import java.net.SocketTimeoutException;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -69,7 +72,7 @@ public class TravelFeignActionExecutor implements ActionExecutor {
     private ActionOutcome executeFlightReservation(PlannedAction action, ExecutionContext context) {
         List<String> args = action.arguments();
         if (args.size() < 3) {
-            throw new FrameworkException("book-flight requires 3 arguments (traveler, origin, destination), got: " + args);
+            throw new FrameworkException("book-flight requiere 3 argumentos (traveler, origin, destination), recibidos: " + args);
         }
         String originCityId = args.get(1).toUpperCase();
         String destCityId   = args.get(2).toUpperCase();
@@ -79,8 +82,24 @@ public class TravelFeignActionExecutor implements ActionExecutor {
         String airlineId  = lookupAirline(context, originCityId, destCityId);
         String travelerSymbol = requiredCtx(context, "travelerSymbol");
 
-        FlightReservationDto reservation = flightServiceClient.createReservation(
-                new FlightReservationRequest(userId, airlineId, originCityId, destCityId, LocalDate.parse(travelDate)));
+        FlightReservationDto reservation;
+        try {
+            reservation = flightServiceClient.createReservation(
+                    new FlightReservationRequest(userId, airlineId, originCityId, destCityId, LocalDate.parse(travelDate)));
+        } catch (FeignException ex) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("action", action.asInvocation());
+            payload.put("origen", originCityId);
+            payload.put("destino", destCityId);
+            payload.put("status", ex.status());
+            return ActionOutcome.failure(ex.status(), mensajeFeign("reserva de vuelo", ex), payload);
+        } catch (RuntimeException ex) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("action", action.asInvocation());
+            payload.put("origen", originCityId);
+            payload.put("destino", destCityId);
+            return falloServicioExterno("reserva de vuelo", ex, payload);
+        }
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("reservationId", reservation.id());
@@ -103,7 +122,7 @@ public class TravelFeignActionExecutor implements ActionExecutor {
         // Linea de plan: (book-hotel traveler_1 ht016 pari) -> argumentos en minusculas por PlanTextParser
         List<String> args = action.arguments();
         if (args.size() < 3) {
-            throw new FrameworkException("book-hotel requires 3 arguments (traveler, hotel, city), got: " + args);
+            throw new FrameworkException("book-hotel requiere 3 argumentos (traveler, hotel, city), recibidos: " + args);
         }
         String travelerSymbol = args.get(0);
         String hotelId        = args.get(1).toUpperCase();
@@ -112,8 +131,24 @@ public class TravelFeignActionExecutor implements ActionExecutor {
         String userId     = requiredCtx(context, "travelerId");
         String travelDate = requiredCtx(context, "travelDate");
 
-        HotelReservationDto reservation = hotelServiceClient.createReservation(
-                new HotelReservationRequest(userId, hotelId, LocalDate.parse(travelDate)));
+        HotelReservationDto reservation;
+        try {
+            reservation = hotelServiceClient.createReservation(
+                    new HotelReservationRequest(userId, hotelId, LocalDate.parse(travelDate)));
+        } catch (FeignException ex) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("action", action.asInvocation());
+            payload.put("hotelId", hotelId);
+            payload.put("ciudadId", cityId);
+            payload.put("status", ex.status());
+            return ActionOutcome.failure(ex.status(), mensajeFeign("reserva de hotel", ex), payload);
+        } catch (RuntimeException ex) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("action", action.asInvocation());
+            payload.put("hotelId", hotelId);
+            payload.put("ciudadId", cityId);
+            return falloServicioExterno("reserva de hotel", ex, payload);
+        }
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("reservationId", reservation.id());
@@ -153,7 +188,6 @@ public class TravelFeignActionExecutor implements ActionExecutor {
         return value;
     }
 
-    @SuppressWarnings("unchecked")
     private String lookupAirline(ExecutionContext context, String originCityId, String destCityId) {
         Object raw = context.get("preferredAirlineByRoute");
         if (raw instanceof Map<?, ?> map) {
@@ -162,6 +196,43 @@ public class TravelFeignActionExecutor implements ActionExecutor {
                 return String.valueOf(airline);
             }
         }
-        throw new FrameworkException("No airline found for route " + originCityId + " -> " + destCityId);
+        throw new FrameworkException("No se encontro aerolinea para la ruta " + originCityId + " -> " + destCityId);
+    }
+
+    private String mensajeFeign(String operacion, FeignException ex) {
+        String detalle = ex.contentUTF8();
+        if (detalle != null && !detalle.isBlank()) {
+            return "Fallo la " + operacion + ": " + detalle;
+        }
+        return "Fallo la " + operacion + " con status " + ex.status();
+    }
+
+    private ActionOutcome falloServicioExterno(String operacion, RuntimeException ex, Map<String, Object> payload) {
+        int status = statusServicioExterno(ex);
+        payload.put("status", status);
+        payload.put("error", ex.getClass().getSimpleName());
+        String message = status == 504
+                ? "El servicio externo excedio el tiempo de espera al procesar la " + operacion
+                : "El servicio externo no esta disponible para completar la " + operacion;
+        return ActionOutcome.failure(status, message, payload);
+    }
+
+    private int statusServicioExterno(RuntimeException ex) {
+        if (ex instanceof RetryableException retryableException && isTimeout(retryableException)) {
+            return 504;
+        }
+        return 503;
+    }
+
+    private boolean isTimeout(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof SocketTimeoutException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        String message = throwable.getMessage();
+        return message != null && message.toLowerCase().contains("timed out");
     }
 }

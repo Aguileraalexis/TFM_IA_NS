@@ -31,16 +31,30 @@ public class TravelPlanningProblemBuilder implements PlanningProblemBuilder {
 
     @Override
     public PlanningProblem build(SymbolicState state, GoalSpec goalSpec) {
+        return build(state, goalSpec, new TravelPlanningBlacklist());
+    }
+
+    public PlanningProblem build(SymbolicState state, GoalSpec goalSpec, TravelPlanningBlacklist blacklist) {
         TravelRequestSpec request = TravelRequestSpec.fromGoalSpec(goalSpec);
         TravelCatalogSnapshot snapshot = travelCatalogService.fetchSnapshot(request.travelDate());
+        TravelPlanningBlacklist effectiveBlacklist = blacklist == null ? new TravelPlanningBlacklist() : blacklist;
 
         if (request.originCityId() == null || request.targetCityIds().isEmpty()) {
             throw new FrameworkException("Travel planning requires originCityId and at least one target city");
         }
 
+        List<FlightDto> availableFlights = snapshot.flights().stream()
+                .filter(flight -> !effectiveBlacklist.isFlightRouteBlacklisted(flight.ciudadOrigenId(), flight.ciudadDestinoId()))
+                .toList();
+        List<HotelDto> availableHotels = snapshot.hotels().stream()
+                .filter(hotel -> !effectiveBlacklist.isHotelBlacklisted(hotel.id()))
+                .toList();
+        Map<String, List<HotelDto>> availableHotelsByCity = availableHotels.stream()
+                .collect(java.util.stream.Collectors.groupingBy(HotelDto::ciudadId, LinkedHashMap::new, java.util.stream.Collectors.toList()));
+
         Map<String, String> selectedHotelByCity = new LinkedHashMap<>();
         for (String cityId : request.targetCityIds()) {
-            HotelDto hotel = snapshot.hotelsByCity().getOrDefault(cityId, List.of()).stream()
+            HotelDto hotel = availableHotelsByCity.getOrDefault(cityId, List.of()).stream()
                     .sorted(java.util.Comparator.comparing(HotelDto::id))
                     .findFirst()
                     .orElseThrow(() -> new FrameworkException("No hay hoteles configurados para la ciudad " + cityId));
@@ -61,11 +75,11 @@ public class TravelPlanningProblemBuilder implements PlanningProblemBuilder {
         Set<String> initFacts = new LinkedHashSet<>(state.facts());
         initFacts.add("(at " + request.travelerSymbol() + " " + request.originCityId() + ")");
         initFacts.add("(visited-city " + request.originCityId() + ")");
-        for (FlightDto flight : snapshot.flights()) {
+        for (FlightDto flight : availableFlights) {
             initFacts.add("(flight-available " + flight.ciudadOrigenId() + " " + flight.ciudadDestinoId() + ")");
             preferredAirlineByRoute.putIfAbsent(routeKey(flight.ciudadOrigenId(), flight.ciudadDestinoId()), flight.aerolineaId());
         }
-        for (HotelDto hotel : snapshot.hotels()) {
+        for (HotelDto hotel : availableHotels) {
             initFacts.add("(hotel-in-city " + hotel.id() + " " + hotel.ciudadId() + ")");
         }
         for (AttractionDto attraction : snapshot.attractions()) {
@@ -90,6 +104,8 @@ public class TravelPlanningProblemBuilder implements PlanningProblemBuilder {
         metadata.put("selectedHotelByCity", selectedHotelByCity);
         metadata.put("attractionsByCity", attractionsByCity);
         metadata.put("preferredAirlineByRoute", preferredAirlineByRoute);
+        metadata.put("blacklistedFlightRoutes", effectiveBlacklist.blacklistedFlightRoutes());
+        metadata.put("blacklistedHotelIds", effectiveBlacklist.blacklistedHotelIds());
 
         return new PlanningProblem(
                 "travel-problem-" + System.currentTimeMillis(),

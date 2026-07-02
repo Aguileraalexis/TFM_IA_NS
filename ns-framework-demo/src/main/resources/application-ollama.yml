@@ -76,6 +76,26 @@ demo:
               "constraints": {},
               "confidence": 0.93
             }
+    planner:
+      type: ${DEMO_TRAVEL_PLANNER_TYPE:docker}
+      http-llm:
+        endpoint: ${DEMO_TRAVEL_PLANNER_LLM_ENDPOINT:${DEMO_TRAVEL_LLM_ENDPOINT:http://localhost:11434/api/generate}}
+        api-key: ${DEMO_TRAVEL_PLANNER_LLM_API_KEY:${DEMO_TRAVEL_LLM_API_KEY:}}
+        timeout: ${DEMO_TRAVEL_PLANNER_LLM_TIMEOUT:180s}
+        request:
+          model: ${DEMO_TRAVEL_PLANNER_LLM_MODEL:${DEMO_TRAVEL_LLM_MODEL:llama3.1:latest}}
+          stream: false
+          temperature: 0
+          system: |-
+            You are an action planner component for a travel neuro-symbolic framework.
+            Return only valid JSON with fields: success, message, rawPlan, actions.
+            actions must be an array of objects with fields: name, arguments.
+            Allowed actions only:
+            - book-flight(travelerSymbol, originCityId, destinationCityId)
+            - book-hotel(travelerSymbol, hotelId, cityId)
+            - visit-attraction(travelerSymbol, attractionId, cityId)
+            Use only identifiers already present in the provided planning problem.
+            Do not wrap output in markdown code fences.
 
 logging:
   level:

@@ -1,9 +1,10 @@
 package com.tesis.nsdemo.controller;
 
-import com.tesis.nsdemo.dto.ExecuteRequest;
 import com.tesis.nsdemo.travel.TravelDomainPddlGenerator;
 import com.tesis.nsframework.core.exception.ExternalServiceException;
 import com.tesis.nsframework.core.exception.FrameworkException;
+import com.tesis.nsframework.core.model.ExecutionResult;
+import com.tesis.nsframework.core.model.SymbolicState;
 import com.tesis.nsframework.core.port.ExecutionOrchestrator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,5 +74,28 @@ class ExecutionControllerAdviceTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("No se pudo inferir la ciudad de origen desde el prompt"));
+    }
+
+    @Test
+    void shouldExposeSuccessAndFailurePerExecutedActionInJson() throws Exception {
+        when(orchestrator.run(anyString())).thenReturn(ExecutionResult.success(
+                "Viaje completado exitosamente",
+                java.util.List.of(
+                        new ExecutionResult.ExecutedAction("book-flight(traveler_1, madr, pari)", false),
+                        new ExecutionResult.ExecutedAction("book-flight(traveler_1, pari, logr)", true)
+                ),
+                1,
+                new SymbolicState()
+        ));
+
+        mockMvc.perform(post("/api/execute")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{" + "\"input\":\"viajar de madrid a logrono\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.executedActions[0].invocation").value("book-flight(traveler_1, madr, pari)"))
+                .andExpect(jsonPath("$.executedActions[0].success").value(false))
+                .andExpect(jsonPath("$.executedActions[1].invocation").value("book-flight(traveler_1, pari, logr)"))
+                .andExpect(jsonPath("$.executedActions[1].success").value(true))
+                .andExpect(jsonPath("$.replans").value(1));
     }
 }

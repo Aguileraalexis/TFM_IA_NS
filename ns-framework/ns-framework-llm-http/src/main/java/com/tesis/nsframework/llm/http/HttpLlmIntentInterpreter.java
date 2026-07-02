@@ -114,6 +114,13 @@ public class HttpLlmIntentInterpreter implements IntentInterpreter {
             LOGGER.error("Error al interpretar la intencion", ex);
             throw new FrameworkException("No se pudo interpretar la entrada del usuario", ex);
         } catch (IOException ex) {
+            ConnectException connectException = findCause(ex, ConnectException.class);
+            if (connectException != null) {
+                LOGGER.error("No se pudo conectar al endpoint LLM. endpoint={}", endpoint, connectException);
+                throw ExternalServiceException.unavailable(LLM_SERVICE_NAME,
+                        "No se pudo conectar al servicio LLM/Ollama en " + endpoint,
+                        connectException);
+            }
             LOGGER.error("Error al interpretar la intencion", ex);
             throw ExternalServiceException.badGateway(LLM_SERVICE_NAME,
                     "El servicio LLM/Ollama devolvio una respuesta invalida o no pudo procesarse",
@@ -291,6 +298,17 @@ public class HttpLlmIntentInterpreter implements IntentInterpreter {
             return ExternalServiceException.unavailable(serviceName, message, cause);
         }
         return ExternalServiceException.badGateway(serviceName, message, cause);
+    }
+
+    private <T extends Throwable> T findCause(Throwable throwable, Class<T> type) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (type.isInstance(current)) {
+                return type.cast(current);
+            }
+            current = current.getCause();
+        }
+        return null;
     }
 
     private InterpretationResult parseInterpretation(String rawBody) throws IOException {
